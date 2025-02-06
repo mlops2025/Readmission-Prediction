@@ -20,7 +20,7 @@ def ingest_data(file_url=DEFAULT_FILE_URL):
     print("Downloading Data")
 
     # Set the root directory variable using a relative path
-    root_dir = os.path.abspath(os.path.join(os.path.dirname(os.getcwd())))
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(os.getcwd(),"..")))
     print(f"Root directory: {root_dir}")
 
     # Path to store the zipfile
