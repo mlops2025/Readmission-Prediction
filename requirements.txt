@@ -1,4 +1,17 @@
+apache-airflow
+dvc[gs]
+flask
+scikit-learn
+scipy
 pandas
 numpy
+google-cloud-storage
+google-auth
+matplotlib
+seaborn
+imblearn
+hyperopt
+mlflow
+great_expectations==0.18.9
+shap
 
--e .
