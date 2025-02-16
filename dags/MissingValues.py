@@ -18,29 +18,58 @@ def MissingVal(df):
         ## Droping columns which has more '?' values 
         if 'weight' in df.columns:
             del df['weight']  ## #98569 '?' values
+        if 'payer_code' in df.columns:
+            del df['payer_code'] 
+        if 'medical_specialty' in df.columns:
+            del df['medical_specialty'] 
+        if 'examide' in df.columns:
+            del df['examide'] 
+        if 'citoglipton' in df.columns:
+            del df['citoglipton']
+        if 'glimepiride-pioglitazone' in df.columns:
+            del df['glimepiride-pioglitazone']
         logger.info("Dropped inconsistent Values")
 
-        ## Replace columns which has more '?' values  
-        df['payer_code'].replace('?','N/A')
-        df['diag_1'].replace('?', 'N/A')
-        df['diag_2'].replace('?', 'N/A')
-        df['diag_3'].replace('?', 'N/A')
-        logger.info("Replaced inconsistent Values")
+        #CASE 3: Setting Target Value
+        df["readmitted"] = np.where(
+        (df["readmitted"] == ">30") | (df["readmitted"] == "<30"),
+                            "YES",
+                            "NO"
+        )
+        logger.info("Setting up Target value")
+
         
-        #Case 3: Incorrect Mapping
-        #df_Patients[df_Patients["admission_type_id"] > 26] 0 rows #invalid admission Type id
-        
-        #Case 4: Diagnosis Anamolies
-        df["Anamolies"] = np.where((df["diag_1"] == "?") & (df["diag_2"] != "?") & (df["diag_3"] != "?"),True,False,)
-        df["Anamolies"] = np.where((df["diag_1"] != "?") & (df["diag_2"] == "?") & (df["diag_3"] != "?"),True,False,)
-        df.drop(df[df['Anamolies']==True].index)
-        logger.info("Dropped Diagnosis Anamolies Values")
 
     except Exception as e:
         logging.info('__.__Error occoured__.__')
         raise CustomException(e,sys)
 
     return df
+
+def duplicates(df):
+    try:
+        duplicates=df.duplicated()
+         #df= pd.read_csv("data/diabetic_data.csv") 
+         #logging.info("File reading begins")
+        count= duplicates.shape[0]
+        if count<0:
+            logging.warning(f"Found {count} duplicate rows!")
+        else:
+            logging.info("No duplicate data found")
+        
+    # drop
+        drop_col =['encounter_id', 'patient_nbr']
+        df.drop(drop_col, axis=1, inplace=True)
+        #logging.info(f"Dropped columns {drop_col}")
+    
+        unwanted =[11,19,20,21]# ids which are expired, homefacility, hospice etc
+        df=df[~df['discharge_disposition_id'].isin(unwanted)]
+        df.reset_index(drop=True, inplace=True)
+        #logging.info("desposition ids")
+        return df
+    except Exception as e:
+        logging.info('__.__Error occoured__.__')
+        raise CustomException(e,sys)
     
    
     
