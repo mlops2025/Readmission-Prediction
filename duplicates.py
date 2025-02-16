@@ -1,5 +1,7 @@
 import pandas as pd
-import logging
+from src.logger import logging
+from src.exceptions import CustomException
+import sys
 
 logging.basicConfig(level=logging.INFO, filename="logs.log", filemode="w",format="%(asctime)s -%(levelname)s -%(message)s")
 try:
@@ -28,8 +30,10 @@ try:
     df.to_csv("data/cleaned_diabetic_data.csv", index=False)
     logging.info("File Saved")
     
-except FileNotFoundError:
-    logging.error("FileNotFoundError: The file does not exist in the folder.", exc_info=True)
+except FileNotFoundError as e:
+    logging.info("FileNotFoundError: The file does not exist in the folder.", exc_info=True)
+    raise CustomException(e,sys)
+
 
 
     
