@@ -25,9 +25,10 @@ def duplicates(df):
         df.reset_index(drop=True, inplace=True)
         #logging.info("desposition ids")
         return df
+    
     except Exception as e:
         logging.info('__.__Error occoured__.__')
         raise CustomException(e,sys)
-    #return df
+    
 
     
