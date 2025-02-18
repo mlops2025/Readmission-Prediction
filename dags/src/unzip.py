@@ -8,7 +8,6 @@ from src.logger import logging
 # Set the root directory variable using a relative path
 # ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
-print(f"Root directory Unzip: {ROOT_DIR}")
 
 ZIP_FILENAME = os.path.join(ROOT_DIR, 'data','data.zip')
 EXTRACT_TO = os.path.join(ROOT_DIR,'data')

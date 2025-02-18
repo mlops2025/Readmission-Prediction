@@ -1,10 +1,15 @@
 from airflow import DAG
 import os
-import logging
 from datetime import datetime, timedelta
 from airflow.operators.python_operator import PythonOperator
 from src.data_download import ingest_data
 from src.unzip import unzip_file
+from src.duplicate_missing_values import duplicates
+from src.duplicate_missing_values import missingVal
+from src.data_mapping import process_data_mapping
+
+ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
+DATA_PATH = os.path.join(ROOT_DIR, "data", "diabetic_data.csv")
 
 # Define default_args
 default_args = {
@@ -39,3 +44,26 @@ unzip_file_task = PythonOperator(
     op_args=[ingest_data_task.output],
     dag=dag,
 )
+
+remove_duplicates_task = PythonOperator(
+    task_id='remove_duplicates_task',
+    python_callable= duplicates,
+    op_args=[DATA_PATH],
+    dag=dag,
+)
+
+missing_value_task = PythonOperator(
+    task_id='missing_value_task',
+    python_callable= missingVal,
+    op_args= [remove_duplicates_task.output],
+    dag=dag,
+)
+
+data_mapping_task = PythonOperator(
+    task_id='data_mapping_task',
+    python_callable= process_data_mapping,
+    op_args= [missing_value_task.output],
+    dag=dag,
+)
+
+ingest_data_task >> unzip_file_task >> remove_duplicates_task >> missing_value_task >> data_mapping_task
