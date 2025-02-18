@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
 from src.logger import logging
-from src.exceptions import CustomExceptions
+from src.exceptions import CustomException
+import sys
 
-def MissingVal(df):
+def missingVal(df):
     try:
         
         #Case 1: Missing Values
@@ -12,7 +13,7 @@ def MissingVal(df):
             del df['max_glu_serum'] ## 96420 Droping N/A
         if 'A1Cresult' in df.columns:
             del df['A1Cresult']  ## 84748 Droping N/A
-        logger.info("Dropped N/A Values")
+        logging.info("Dropped N/A Values")
         
         #Case 2: Inconsistent Values
         ## Droping columns which has more '?' values 
@@ -28,16 +29,15 @@ def MissingVal(df):
             del df['citoglipton']
         if 'glimepiride-pioglitazone' in df.columns:
             del df['glimepiride-pioglitazone']
-        logger.info("Dropped inconsistent Values")
+        logging.info("Dropped inconsistent Values")
 
         #CASE 3: Setting Target Value
+        logging.info("Setting up Target value")
         df["readmitted"] = np.where(
         (df["readmitted"] == ">30") | (df["readmitted"] == "<30"),
-                            "YES",
-                            "NO"
+                            "Yes",
+                            "No"
         )
-        logger.info("Setting up Target value")
-
         
 
     except Exception as e:
@@ -46,18 +46,19 @@ def MissingVal(df):
 
     return df
 
-def duplicates(df):
+def duplicates(file_path):
     try:
+        df = pd.read_csv(file_path)
+        logging.info("File reading begins")
+
         duplicates=df.duplicated()
-         #df= pd.read_csv("data/diabetic_data.csv") 
-         #logging.info("File reading begins")
         count= duplicates.shape[0]
         if count<0:
             logging.warning(f"Found {count} duplicate rows!")
         else:
             logging.info("No duplicate data found")
         
-    # drop
+        # drop
         drop_col =['encounter_id', 'patient_nbr']
         df.drop(drop_col, axis=1, inplace=True)
         #logging.info(f"Dropped columns {drop_col}")
