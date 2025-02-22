@@ -1,15 +1,25 @@
-from airflow import DAG
+import sys
 import os
+from airflow import DAG
+# Airflow root directory (where the project is mounted)
+AIRFLOW_ROOT = "/opt/airflow"
+
+# Add src to Python path
+SRC_PATH = os.path.join(AIRFLOW_ROOT, "src")
+sys.path.append(SRC_PATH)
+
+# Now import from src.data_preprocessing
+from data_preprocessing.data_download import ingest_data
+from data_preprocessing.unzip import unzip_file
+from data_preprocessing.duplicate_missing_values import duplicates, missingVal
+from data_preprocessing.data_mapping import process_data_mapping
+
+# Define data path
+DATA_PATH = os.path.join(AIRFLOW_ROOT, "data", "diabetic_data.csv")
+
 from datetime import datetime, timedelta
 from airflow.operators.python_operator import PythonOperator
-from src.data_download import ingest_data
-from src.unzip import unzip_file
-from src.duplicate_missing_values import duplicates
-from src.duplicate_missing_values import missingVal
-from src.data_mapping import process_data_mapping
 
-ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
-DATA_PATH = os.path.join(ROOT_DIR, "data", "diabetic_data.csv")
 
 # Define default_args
 default_args = {
