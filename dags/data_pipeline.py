@@ -1,10 +1,25 @@
-from airflow import DAG
+import sys
 import os
-import logging
+from airflow import DAG
+# Airflow root directory (where the project is mounted)
+AIRFLOW_ROOT = "/opt/airflow"
+
+# Add src to Python path
+SRC_PATH = os.path.join(AIRFLOW_ROOT, "src")
+sys.path.append(SRC_PATH)
+
+# Now import from src.data_preprocessing
+from data_preprocessing.data_download import ingest_data
+from data_preprocessing.unzip import unzip_file
+from data_preprocessing.duplicate_missing_values import duplicates, missingVal
+from data_preprocessing.data_mapping import process_data_mapping
+
+# Define data path
+DATA_PATH = os.path.join(AIRFLOW_ROOT, "data", "diabetic_data.csv")
+
 from datetime import datetime, timedelta
 from airflow.operators.python_operator import PythonOperator
-from src.data_download import ingest_data
-from src.unzip import unzip_file
+
 
 # Define default_args
 default_args = {
@@ -39,3 +54,26 @@ unzip_file_task = PythonOperator(
     op_args=[ingest_data_task.output],
     dag=dag,
 )
+
+remove_duplicates_task = PythonOperator(
+    task_id='remove_duplicates_task',
+    python_callable= duplicates,
+    op_args=[DATA_PATH],
+    dag=dag,
+)
+
+missing_value_task = PythonOperator(
+    task_id='missing_value_task',
+    python_callable= missingVal,
+    op_args= [remove_duplicates_task.output],
+    dag=dag,
+)
+
+data_mapping_task = PythonOperator(
+    task_id='data_mapping_task',
+    python_callable= process_data_mapping,
+    op_args= [missing_value_task.output],
+    dag=dag,
+)
+
+ingest_data_task >> unzip_file_task >> remove_duplicates_task >> missing_value_task >> data_mapping_task
