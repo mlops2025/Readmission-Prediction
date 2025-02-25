@@ -145,21 +145,3 @@ def validate_data_schema(df):
     except Exception as e:
         logging.error(f"Error in validate_data_schema: {str(e)}")
         raise CustomException(e, sys)
-
-if __name__ == "__main__":
-    try:
-        ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
-        DATA_DIR = os.path.join(ROOT_DIR, "data", "processed")
-        sample_data_path = os.path.join(DATA_DIR, "processed_data.csv")
-        if os.path.exists(sample_data_path):
-            df = pd.read_csv(sample_data_path)
-            processed_df = validate_data_schema(df)
-            print(processed_df.head())
-            logging.info("Schema validation completed on sample data")
-        else:
-            logging.warning(f"No sample data found at {sample_data_path}")
-            logging.info("This module is designed to be imported and used with a DataFrame input")
-    
-    except Exception as e:
-        logging.error(f"Error in main execution: {str(e)}")
-        raise CustomException(e, sys)
