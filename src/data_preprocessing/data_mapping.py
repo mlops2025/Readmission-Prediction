@@ -7,7 +7,8 @@ ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
 SAVE_TO = os.path.join(ROOT_DIR, 'data', 'processed')
 
 # Ensure the SAVE_TO directory exists
-os.makedirs(SAVE_TO, exist_ok=True)
+if not os.path.exists(SAVE_TO):
+    os.makedirs(SAVE_TO)
 
 def clean_gender(df):
     try:
