@@ -3,11 +3,11 @@ Function to unzip data and make it available
 """
 import zipfile
 import os
+from logger import logging
 
 # Set the root directory variable using a relative path
 # ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
-print(f"Root directory Unzip: {ROOT_DIR}")
 
 ZIP_FILENAME = os.path.join(ROOT_DIR, 'data','data.zip')
 EXTRACT_TO = os.path.join(ROOT_DIR,'data')
@@ -25,8 +25,8 @@ def unzip_file(zip_filename=ZIP_FILENAME, extract_to=EXTRACT_TO):
         with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
             zip_ref.extractall(extract_to)
         print(f"File {zip_filename} successfully unzipped to {extract_to}")
-    except zipfile.BadZipFile:
-        print(f"Failed to unzip {zip_filename}")
+    except zipfile.BadZipFile as e:
+        logging.info(f"Failed to unzip {zip_filename}")
     # Return unzipped file
     unzipped_file =  os.path.join(extract_to, 'Readmission_Data.xlsx')
     return unzipped_file
