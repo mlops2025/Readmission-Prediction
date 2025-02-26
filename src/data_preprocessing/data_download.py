@@ -3,8 +3,8 @@ Function to download and ingest the data file
 """
 import os
 import requests
-from src.logger import logging
-from src.exceptions import CustomException
+from logger import logging
+from exceptions import CustomException
 import sys
 
 DEFAULT_FILE_URL = "https://archive.ics.uci.edu/static/public/296/diabetes+130-us+hospitals+for+years+1999-2008.zip"
