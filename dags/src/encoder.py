@@ -5,7 +5,7 @@ import sys
 
 def target_encoding(df):
     try:
-        df.loc[:, "readmitted_encoded"] = df["readmitted"].map({"Yes": 1, "No": 0})
+        df["readmitted"] = df["readmitted"].map({"Yes": 1, "No": 0})
         # Resetting the indiced
         df=df.reset_index(drop=True)
         
@@ -21,5 +21,6 @@ def target_encoding(df):
         raise CustomException(e,sys)
 
     return df
+#test
 
         
