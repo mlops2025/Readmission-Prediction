@@ -1,8 +1,14 @@
 import os
-import pandas as pd
-from src.logger import logging
-from src.exceptions import CustomException
+from logger import logging
+from exceptions import CustomException
 import sys
+
+ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
+SAVE_TO = os.path.join(ROOT_DIR, 'data', 'processed')
+
+# Ensure the SAVE_TO directory exists
+if not os.path.exists(SAVE_TO):
+    os.makedirs(SAVE_TO)
 
 def clean_gender(df):
     try:
@@ -157,8 +163,9 @@ def process_diagnosis_columns(df):
         logging.info('__.__Error occoured__.__')
         raise CustomException(e,sys)
 
+# Main function to process data mapping
 def process_data_mapping(df):
-    #Main function to process data mapping
+    
     try:
         logging.info("Starting data mapping process")
 
@@ -170,7 +177,14 @@ def process_data_mapping(df):
         for func in processing_functions:
             df = func(df)
             logging.info(f"Completed {func.__name__}")
-        return df
+        
+        save_path = os.path.join(SAVE_TO, 'processed_data.csv')
+
+        # Save processed data
+        df.to_csv(save_path, index=False)
+        logging.info(f"Processed data saved to {save_path}")
+
+        return save_path 
         
     except Exception as e:
         logging.info('__.__Error occoured__.__')

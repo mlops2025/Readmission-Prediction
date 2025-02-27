@@ -175,3 +175,7 @@ cython_debug/
 
 #ignore logs dir
 logs/
+
+# ignore raw data and zip files
+*.zip
+*.csv
