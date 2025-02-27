@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
+import os
 from src.logger import logging
 from src.exceptions import CustomExceptions
 from fairlearn.metrics import demographic_parity_ratio, equalized_odds_ratio
@@ -14,7 +14,10 @@ from sklearn.preprocessing import LabelEncoder ##
 #1: Evaluating the dataset and checking whether bias exists in demographics features (age,race and gender)
 def Bias_Dataset_Evaluation(df):
     try:
-       
+           
+        save_folder = os.path.abspath("Bias_Plots")
+        os.makedirs(save_folder, exist_ok=True)
+
         fig, axes = plt.subplots(1, 3, figsize=(10, 5))
 
         axes[0].hist(df['gender'], bins=5, color='blue', alpha=0.5)
@@ -26,8 +29,10 @@ def Bias_Dataset_Evaluation(df):
         axes[2].hist(df['race'], bins=5, color='red', alpha=0.5)
         axes[2].set_title('Race')
 
-        #plt.tight_layout()
+        plt.tight_layout()
         #plt.show()
+        save_path = os.path.join(save_folder, "Demographics_histogram.png")
+        plt.savefig(save_path)
         logger.info("Data Visualization of demographic groups")
     
     except Exception as e:
