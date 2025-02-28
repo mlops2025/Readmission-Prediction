@@ -155,13 +155,19 @@ def map_diagnosis_categories(x):
 def process_diagnosis_columns(df):
     try:
         logging.info('process_diagnosis_columns')
-        #Apply diagnosis mapping to all diagnosis columns
+
+        # Drop rows where any of diag_1, diag_2, diag_3 contain '?'
+        df = df[~df[['diag_1', 'diag_2', 'diag_3']].isin(['?']).any(axis=1)]
+        
+        # Apply diagnosis mapping to all diagnosis columns
         for col in ['diag_1', 'diag_2', 'diag_3']:
             df[col] = df[col].apply(map_diagnosis_categories)
+
         return df
     except Exception as e:
-        logging.info('__.__Error occoured__.__')
-        raise CustomException(e,sys)
+        logging.error(f'Error processing diagnosis columns: {e}')
+        raise CustomException(e, sys)
+
 
 # Main function to process data mapping
 def process_data_mapping(df):
