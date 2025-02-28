@@ -2,28 +2,57 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import RobustScaler
 import os
-from src.logger import logging
-from src.exceptions import CustomExceptions
+from logger import logging
+from exceptions import CustomException
 import sys
+
+ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
+SAVE_TO = os.path.join(ROOT_DIR, 'data', 'processed')
+
+# Ensure the SAVE_TO directory exists
+if not os.path.exists(SAVE_TO):
+    os.makedirs(SAVE_TO)
 
 def scaling(df):
     try:
-        logging.info("Starting feature selection process...")
-    
-        df_num=df.select_dtypes(include=['number'])
-        df_cat=df.select_dtypes(include=['object'])
+        logging.info("Starting feature scaling process...")
 
+        # Separate target variable (readmitted)
+        if 'readmitted' not in df.columns:
+            raise CustomException("Target variable 'readmitted' not found in DataFrame.", sys)
+
+        df_target = df['readmitted'].map({'Yes': 1, 'No': 0})  # Label Encoding
+        df = df.drop(columns=['readmitted'])  # Remove target from feature set
+
+        # Separate numerical and categorical features
+        df_num = df.select_dtypes(include=['number'])
+        df_cat = df.select_dtypes(include=['object'])
+
+        # Apply scaling to numerical features
         scaler = RobustScaler()
         scaled_features = scaler.fit_transform(df_num)
-        df_num_scaled=pd.DataFrame(scaled_features,columns=df_num.columns)
+        df_num_scaled = pd.DataFrame(scaled_features, columns=df_num.columns)
 
-        df_cat_dummy=pd.get_dummies(df_cat,drop_first=True)
-        df_cat_dummy.index=df_num_scaled.index
-        df_scaled=pd.concat([df_num_scaled,df_cat_dummy],axis=1)
-    
-        logging.info("Feature selection completed successfully.")
+        # Handle categorical features only if they exist
+        if not df_cat.empty:
+            df_cat_dummy = pd.get_dummies(df_cat, drop_first=True).astype(int)
+            df_cat_dummy.index = df_num_scaled.index
+            df_scaled = pd.concat([df_num_scaled, df_cat_dummy], axis=1)
+        else:
+            logging.warning("No categorical features found. Skipping one-hot encoding.")
+            df_scaled = df_num_scaled  # Only numerical features remain
+
+        # Add target variable back to the processed DataFrame
+        df_scaled['readmitted'] = df_target.values
+
+        # Save processed data
+        save_path = os.path.join(SAVE_TO, 'processed_data.csv')
+        df_scaled.to_csv(save_path, index=False)
+        logging.info(f"Processed data saved to {save_path}")
+
+        logging.info("Feature scaling completed successfully.")
         return df_scaled
-    
+
     except Exception as e:
         logging.error("An error occurred during feature scaling.")
         raise CustomException(e, sys)

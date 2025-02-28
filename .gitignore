@@ -179,3 +179,6 @@ logs/
 # ignore raw data and zip files
 *.zip
 *.csv
+
+# igone key files
+key.json

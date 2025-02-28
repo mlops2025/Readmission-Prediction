@@ -1,10 +1,11 @@
 # import pandas as pd
 # import numpy as np
 import sys
+import os
 from logger import logging
 from exceptions import CustomException
 
-def feature_extract(df):
+def feature_extraction(df):
     """
     Extracts three new features: Health Index, Severity of Disease, and Number of Changes.
     
@@ -18,7 +19,7 @@ def feature_extract(df):
         logging.info("Starting feature extraction process...")
 
         # 1st Feature: Health Index
-        df['Health_index'] = df['number_emergency'] + df['number_inpatient'] + df['number_outpatient']
+        df['health_index'] = df['number_emergency'] + df['number_inpatient'] + df['number_outpatient']
         logging.info("Feature 'Health_index' added successfully.")
 
         # 2nd Feature: Severity of Disease
@@ -42,6 +43,7 @@ def feature_extract(df):
 
         df['number_of_changes'] = number_of_changes
         logging.info("Feature 'number_of_changes' added successfully.")
+
 
         logging.info("Feature extraction completed successfully.")
         return df

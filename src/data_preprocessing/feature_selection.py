@@ -3,9 +3,10 @@ import numpy as np
 from scipy import stats
 from scipy.stats import chi2_contingency,ttest_ind
 import os
-from src.logger import logging
-from src.exceptions import CustomExceptions
+from logger import logging
+from exceptions import CustomException
 import sys
+
 
 def feature_selection(df):
     try:
@@ -45,10 +46,9 @@ def feature_selection(df):
             logging.info("Significant numerical features added to the list.")
     
         df_fs=df[selected_cols]
-        df_fs=pd.get_dummies(df_fs,drop_first=True)
     
         logging.info("Feature selection completed successfully.")
-    
+
         return df_fs
 
     except Exception as e:
