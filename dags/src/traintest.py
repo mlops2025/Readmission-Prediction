@@ -7,10 +7,12 @@ import time
 from google.cloud import storage
 from sklearn.model_selection import train_test_split
 
-
-KEY_PATH = #json file path 
+KEY_PATH = "/Users/prarthanaveerabhadraiah/MLOps Project/Readmission-Prediction/gcp_key.json" #replace own json path
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = KEY_PATH #env create
 
+LOCAL_PROCESSED_DIR ="data" #local folder name
+os.makedirs(LOCAL_PROCESSED_DIR, exist_ok=True)
+ 
 def upload_to_gcs(data, bucket_name, destination_blob_name, as_pickle=False):
     """Uploads CSV or Pickle file to Google Cloud Storage with retry on failure."""
     try:
@@ -58,6 +60,14 @@ def train_test_upload(df):
 
         train_df = pd.concat([X_train, y_train], axis=1)
         test_df = pd.concat([X_test, y_test], axis=1)
+        local_train_path = os.path.join(LOCAL_PROCESSED_DIR, "train_data.csv")
+        local_test_path = os.path.join(LOCAL_PROCESSED_DIR, "test_data.csv")
+ 
+        train_df.to_csv(local_train_path, index=False)
+        test_df.to_csv(local_test_path, index=False)
+ 
+        logging.info(f" Train data saved locally at: {local_train_path}")
+        logging.info(f" Test data saved locally at: {local_test_path}")
 
         train_filename = "train_data.csv"
         test_filename = "test_data.csv"
@@ -84,5 +94,3 @@ def train_test_upload(df):
         logging.error(" An error occurred during train-test split or upload.")
         raise
     
-#
-
