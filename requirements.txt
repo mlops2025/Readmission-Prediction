@@ -15,5 +15,6 @@ mlflow
 great_expectations==0.18.9
 shap
 pytest
+pandera
 -e .
 
