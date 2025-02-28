@@ -13,12 +13,18 @@ from data_preprocessing.data_download import ingest_data
 from data_preprocessing.unzip import unzip_file
 from data_preprocessing.duplicate_missing_values import duplicates, missingVal
 from data_preprocessing.data_mapping import process_data_mapping
-
+from data_preprocessing.encoder import target_encoding
+from data_preprocessing.feature_extract import feature_extraction
+from data_preprocessing.data_schema_statistics_generation import validate_data_schema
+from data_preprocessing.feature_selection import feature_selection
+from data_preprocessing.feature_scaling import scaling
+# from data_preprocessing.bias import Bias_Dataset_Evaluation, Bias_Model_Evaluation
 # Define data path
 DATA_PATH = os.path.join(AIRFLOW_ROOT, "data", "diabetic_data.csv")
 
 from datetime import datetime, timedelta
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.email_operator import EmailOperator
 
 
 # Define default_args
@@ -32,6 +38,28 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
+
+# Define function to notify failure or sucess via an email
+def notify_success(context):
+    success_email = EmailOperator(
+        task_id='success_email',
+        to='mlopsneu2025@gmail.com',
+        subject='Success Notification from Airflow',
+        html_content='<p>The task succeeded.</p>',
+        dag=context['dag']
+    )
+    success_email.execute(context=context)
+
+def notify_failure(context):
+    failure_email = EmailOperator(
+        task_id='failure_email',
+        to='mlopsneu2025@gmail.com',
+        subject='Failure Notification from Airflow',
+        html_content='<p>The task failed.</p>',
+        dag=context['dag']
+    )
+    failure_email.execute(context=context)
+
 #INITIALIZE THE DAG INSTANCE
 dag = DAG(
     'DataPipeline',
@@ -41,10 +69,19 @@ dag = DAG(
     catchup = False,
 )
 
+email_notification_task = EmailOperator(
+    task_id='dag_started_email',
+    to='mlopsneu2025@gmail.com',
+    subject='Data Pipeline Dag Started',
+    html_content='<p> Data Pipeline Dag Completed</p>',
+    dag=dag,
+)
+
 ingest_data_task = PythonOperator(
     task_id='ingest_data_task',
     python_callable=ingest_data,
     op_args=["https://archive.ics.uci.edu/static/public/296/diabetes+130-us+hospitals+for+years+1999-2008.zip"],
+    on_failure_callback=notify_failure,
     dag=dag,
 )
 
@@ -52,6 +89,7 @@ unzip_file_task = PythonOperator(
     task_id='unzip_file_task',
     python_callable=unzip_file,
     op_args=[ingest_data_task.output],
+    on_failure_callback=notify_failure,
     dag=dag,
 )
 
@@ -59,6 +97,7 @@ remove_duplicates_task = PythonOperator(
     task_id='remove_duplicates_task',
     python_callable= duplicates,
     op_args=[DATA_PATH],
+    on_failure_callback=notify_failure,
     dag=dag,
 )
 
@@ -66,6 +105,7 @@ missing_value_task = PythonOperator(
     task_id='missing_value_task',
     python_callable= missingVal,
     op_args= [remove_duplicates_task.output],
+    on_failure_callback=notify_failure,
     dag=dag,
 )
 
@@ -73,7 +113,65 @@ data_mapping_task = PythonOperator(
     task_id='data_mapping_task',
     python_callable= process_data_mapping,
     op_args= [missing_value_task.output],
+    on_failure_callback=notify_failure,
     dag=dag,
 )
 
-ingest_data_task >> unzip_file_task >> remove_duplicates_task >> missing_value_task >> data_mapping_task
+schema_validation_task = PythonOperator(
+    task_id='schema_validation_task',
+    python_callable= validate_data_schema,
+    op_args=[data_mapping_task.output],
+    on_failure_callback=notify_failure,
+    dag=dag,
+)
+
+# data_bias_task = PythonOperator(
+#     task_id='data_bias_task',
+#     python_callable= Bias_Dataset_Evaluation,
+#     op_args=[data_mapping_task.output],
+#     on_failure_callback=notify_failure,
+#     dag=dag,
+# )
+
+encoding_task = PythonOperator(
+    task_id='encoding_task',
+    python_callable= target_encoding,
+    op_args= [data_mapping_task.output],
+    on_failure_callback=notify_failure,
+    dag=dag,
+)
+
+feature_extract_task = PythonOperator(
+    task_id='feature_extract_task',
+    python_callable= feature_extraction,
+    op_args= [encoding_task.output],
+    on_failure_callback=notify_failure,
+    dag=dag,
+)
+
+feature_selection_task = PythonOperator(
+    task_id='feature_selection_task',
+    python_callable= feature_selection,
+    op_args= [feature_extract_task.output],
+    on_failure_callback=notify_failure,
+    dag=dag,
+)
+
+feature_scaling_task = PythonOperator(
+    task_id='feature_scaling_task',
+    python_callable= scaling,
+    op_args= [feature_selection_task.output],
+    on_failure_callback=notify_failure,
+    dag=dag,
+)
+
+
+email_notification_task = EmailOperator(
+    task_id='dag_completed_email',
+    to='mlopsneu2025@gmail.com',
+    subject='Dag Completed Successfully',
+    html_content='<p> Data Pipeline Dag Completed</p>',
+    dag=dag,
+)
+
+ingest_data_task >> unzip_file_task >> remove_duplicates_task >> missing_value_task >> data_mapping_task >> encoding_task >> feature_extract_task  >> schema_validation_task >> feature_selection_task  >> feature_scaling_task >> email_notification_task
