@@ -19,7 +19,7 @@ from data_preprocessing.data_schema_statistics_generation import validate_data_s
 from data_preprocessing.feature_selection import feature_selection
 from data_preprocessing.feature_scaling import scaling
 from data_preprocessing.traintest import train_test_upload
-# from data_preprocessing.bias import Bias_Dataset_Evaluation, Bias_Model_Evaluation
+from data_preprocessing.bias import Bias_Dataset_Evaluation
 # Define data path
 DATA_PATH = os.path.join(AIRFLOW_ROOT, "data", "diabetic_data.csv")
 
@@ -126,13 +126,13 @@ schema_validation_task = PythonOperator(
     dag=dag,
 )
 
-# data_bias_task = PythonOperator(
-#     task_id='data_bias_task',
-#     python_callable= Bias_Dataset_Evaluation,
-#     op_args=[data_mapping_task.output],
-#     on_failure_callback=notify_failure,
-#     dag=dag,
-# )
+data_bias_task = PythonOperator(
+    task_id='data_bias_task',
+    python_callable= Bias_Dataset_Evaluation,
+    op_args=[data_mapping_task.output],
+    on_failure_callback=notify_failure,
+    dag=dag,
+)
 
 encoding_task = PythonOperator(
     task_id='encoding_task',
@@ -183,4 +183,4 @@ email_notification_task = EmailOperator(
     dag=dag,
 )
 
-ingest_data_task >> unzip_file_task >> remove_duplicates_task >> missing_value_task >> data_mapping_task >> encoding_task >> feature_extract_task  >> schema_validation_task >> feature_selection_task  >> feature_scaling_task >> gcp_upload_task >> email_notification_task
+ingest_data_task >> unzip_file_task >> remove_duplicates_task >> missing_value_task >> data_mapping_task >> encoding_task >> feature_extract_task  >> schema_validation_task >> data_bias_task >>feature_selection_task  >> feature_scaling_task >> gcp_upload_task >> email_notification_task

@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from src.logger import logging
-from src.exceptions import CustomExceptions
+from logger import logging
+from exceptions import CustomException
 from fairlearn.postprocessing import ThresholdOptimizer
 from fairlearn.metrics import demographic_parity_ratio, equalized_odds_ratio
 from fairlearn.reductions import DemographicParity
@@ -33,7 +33,7 @@ def Bias_Dataset_Evaluation(df):
         #plt.show()
         save_path = os.path.join(save_folder, "Demographics_histogram.png")
         plt.savefig(save_path)
-        logger.info("Data Visualization of demographic groups")
+        logging.info("Data Visualization of demographic groups")
     
     except Exception as e:
          logging.info('__.__Error occoured__.__')
