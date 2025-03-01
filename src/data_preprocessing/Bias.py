@@ -2,14 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-<<<<<<< HEAD
-from logger import logging
-from exceptions import CustomException
-=======
 from src.logger import logging
 from src.exceptions import CustomExceptions
 from fairlearn.postprocessing import ThresholdOptimizer
->>>>>>> 37eef9b9b2dcf551e16106ac0b742ed36606356b
 from fairlearn.metrics import demographic_parity_ratio, equalized_odds_ratio
 from fairlearn.reductions import DemographicParity
 from sklearn.model_selection import train_test_split
