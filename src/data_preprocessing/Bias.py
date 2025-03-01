@@ -2,13 +2,18 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+<<<<<<< HEAD
 from logger import logging
 from exceptions import CustomException
+=======
+from src.logger import logging
+from src.exceptions import CustomExceptions
+from fairlearn.postprocessing import ThresholdOptimizer
+>>>>>>> 37eef9b9b2dcf551e16106ac0b742ed36606356b
 from fairlearn.metrics import demographic_parity_ratio, equalized_odds_ratio
 from fairlearn.reductions import DemographicParity
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import LabelEncoder ##
 
 
 #1: Evaluating the dataset and checking whether bias exists in demographics features (age,race and gender)
@@ -61,6 +66,25 @@ def Bias_Model_Evaluation(df):
         m_eqo = equalized_odds_ratio(y_test, y_pred , sensitive_features=A_test)
         logger.info(f'Value of demographic parity ratio: {round(m_dpr, 2)}') #0.78
         logger.info(f'Value of equal odds ratio: {round(m_eqo, 2)}') #1
+
+         #Retraining
+        threshold_optimizer = ThresholdOptimizer(
+        estimator=model,  # Base model
+        constraints="demographic_parity",  # You can also try "equalized_odds"
+        prefit=True  # Since the model is already trained
+        )
+
+        # Fit ThresholdOptimizer on training data
+        threshold_optimizer.fit(X_train, y_train, sensitive_features=A_train)
+
+        # Make fair predictions
+        y_pred_fair = threshold_optimizer.predict(X_test, sensitive_features=A_test)
+        m_dpr_fair = demographic_parity_ratio(y_test, y_pred_fair, sensitive_features=A_test)
+        m_eqo_fair = equalized_odds_ratio(y_test, y_pred_fair, sensitive_features=A_test)
+
+        logger.info(f'Value of demographic parity ratio after threshold_optimizer: {round(m_dpr, 2)}') #0.78
+        logger.info(f'Value of demographic parity ratio after threshold_optimizer: {round(m_eqo, 2)}') #1
+
     
     except Exception as e:
          logging.info('__.__Error occoured__.__')
