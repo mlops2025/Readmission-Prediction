@@ -11,10 +11,11 @@ KEY_PATH = "/opt/airflow/config/key.json" #replace own json path
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = KEY_PATH #env create
 
 ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
-SAVE_TO = os.path.join(ROOT_DIR, 'data')
+LOCAL_PROCESSED_DIR = os.path.join(ROOT_DIR, 'data', 'processed')
 
-LOCAL_PROCESSED_DIR = SAVE_TO #local folder name
-os.makedirs(LOCAL_PROCESSED_DIR, exist_ok=True)
+if not os.path.exists(LOCAL_PROCESSED_DIR):
+    os.makedirs(LOCAL_PROCESSED_DIR, exist_ok=True)
+
  
 def upload_to_gcs(data, bucket_name, destination_blob_name, as_pickle=False):
     """Uploads CSV or Pickle file to Google Cloud Storage with retry on failure."""

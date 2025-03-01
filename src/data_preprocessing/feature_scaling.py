@@ -6,12 +6,6 @@ from logger import logging
 from exceptions import CustomException
 import sys
 
-ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
-SAVE_TO = os.path.join(ROOT_DIR, 'data', 'processed')
-
-# Ensure the SAVE_TO directory exists
-if not os.path.exists(SAVE_TO):
-    os.makedirs(SAVE_TO)
 
 def scaling(df):
     try:
@@ -44,11 +38,6 @@ def scaling(df):
 
         # Add target variable back to the processed DataFrame
         df_scaled['readmitted'] = df_target.values
-
-        # Save processed data
-        save_path = os.path.join(SAVE_TO, 'processed_data.csv')
-        df_scaled.to_csv(save_path, index=False)
-        logging.info(f"Processed data saved to {save_path}")
 
         logging.info("Feature scaling completed successfully.")
         return df_scaled
