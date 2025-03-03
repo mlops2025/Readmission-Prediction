@@ -43,3 +43,116 @@ The cost of misclassification is high If the patient that doesnt need to readmit
     └── test_data.py
 
 ```
+
+Each module is designed to be modular and testable, ensuring that the entire pipeline is both scalable and maintainable.
+
+###Installation and Setup
+Prerequisites
+
+    Python: Version 3.8 or higher
+    Docker: Ensure Docker or Docker Desktop is installed and running
+    Git: For cloning the repository
+
+###Steps for User Installation
+
+    Clone the Repository:
+    git clone https://github.com/your-repo/diabetic-readmission-prediction.git
+    cd diabetic-readmission-prediction
+
+    Verify Python Version:
+    python --version
+
+    Docker Setup:
+    Ensure Docker is installed and that you have allocated sufficient memory (at least 4GB recommended) and CPU resources for the containers to run smoothly.
+
+###Deployment and Execution
+
+This project is containerized using Docker and orchestrated with Apache Airflow. Follow the steps below to deploy and run the full pipeline:
+
+###Detailed Guide to Deployment
+
+    Build Docker Images:
+        Open a terminal in the project directory and execute:
+        docker compose build
+
+    Initialize Airflow:
+
+        Run the following command to initialize Airflow. This step sets up the database, creates necessary directories, and prepares the environment:
+        docker compose up airflow-init
+
+    Run the Pipeline:
+
+        Start all services by running:
+        docker compose up
+
+    Accessing the Airflow Dashboard:
+
+        - Open your browser and navigate to http://localhost:8080 to access the Airflow dashboard.
+        - Use the credentials specified in the docker-compose.yaml (default: username airflow, password airflow or as configured) to log in.
+        - From the dashboard, you can monitor the status of your DAGs, view logs, and trigger manual runs if needed.
+    
+    Email Notifications (Optional):
+
+        - The pipeline supports email notifications via SMTP settings defined in the docker-compose.yaml. Make sure to update the SMTP configuration (host, port, user, password) with valid credentials.
+        - Notifications will alert you upon the successful completion of tasks or in case of failures.
+    
+    Shutting Down the Pipeline:
+
+        - To stop the running containers, press Ctrl+C in the terminal where docker compose up is running.
+        - To remove the containers (if needed), execute:
+        docker compose down
+
+    Environment and Configuration Variables
+
+        User IDs:
+        Adjust the user settings in the docker-compose.yaml file if you encounter permission issues. For example, set:
+        user: "1000:0"
+
+        Volume Mounts:
+        The volumes are mounted to share the project files between your local machine and the containers. Update the paths if your project structure changes.
+        SMTP Settings:
+        Modify the SMTP environment variables for email alerts:
+        AIRFLOW__SMTP__SMTP_HOST: smtp.gmail.com
+        AIRFLOW__SMTP__SMTP_PORT: 587
+        AIRFLOW__SMTP__SMTP_USER: your-email@gmail.com
+        AIRFLOW__SMTP__SMTP_PASSWORD: your-email-password
+        AIRFLOW__SMTP__SMTP_MAIL_FROM: your-email@gmail.com
+
+    Usage and Testing
+
+        Running the Pipeline
+
+        Once deployed, the Airflow scheduler will execute the pipeline as defined in the DAG. You can:
+
+        - Monitor task progress through the Airflow UI.
+        - Manually trigger DAG runs if immediate execution is required.
+
+    Running Tests
+    To ensure the reliability of each component:
+
+        Unit Tests:
+        Execute tests using a command like:
+        pytest test_data.py
+
+    Integration Tests:
+    Run the integration tests for the entire pipeline by triggering the test_pipeline dag
+
+###Logs and Error Monitoring
+
+    - Logs are managed through the custom logging module (logger.py) and are available via the Airflow UI and container logs.
+    - Custom exceptions in exceptions.py help in pinpointing issues during data ingestion, processing, or model prediction phases.
+
+###Future Enhancements
+
+    Model Training and Deployment:
+    Extend the pipeline to include a training module and automate the deployment of the predictive model.
+    Real-Time Processing:
+    Incorporate real-time data ingestion for up-to-date readmission predictions.
+    Advanced Bias Mitigation:
+    Implement additional fairness techniques and explainability tools to further ensure the model's transparency and reliability.
+
+    
+
+
+
+
