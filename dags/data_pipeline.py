@@ -26,6 +26,8 @@ DATA_PATH = os.path.join(AIRFLOW_ROOT, "data", "diabetic_data.csv")
 from datetime import datetime, timedelta
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.email_operator import EmailOperator
+from airflow.operators.dagrun_operator import TriggerDagRunOperator
+from airflow.utils.trigger_rule import TriggerRule
 
 
 # Define default_args
@@ -183,4 +185,15 @@ email_notification_task = EmailOperator(
     dag=dag,
 )
 
-ingest_data_task >> unzip_file_task >> remove_duplicates_task >> missing_value_task >> data_mapping_task >> encoding_task >> feature_extract_task  >> schema_validation_task >> data_bias_task >>feature_selection_task  >> feature_scaling_task >> gcp_upload_task >> email_notification_task
+# Task to trigger the ModelPipeline DAG
+trigger_model_pipeline_task = TriggerDagRunOperator(
+    task_id='trigger_model_pipeline_task',
+    trigger_dag_id='ModelDevelopmentPipeline',
+    trigger_rule=TriggerRule.ALL_DONE,  # Ensure this task runs only if all upstream tasks succeed
+    dag=dag,
+)
+
+ingest_data_task >> unzip_file_task >> remove_duplicates_task >> missing_value_task >> data_mapping_task >> encoding_task >> feature_extract_task  >> schema_validation_task >> data_bias_task >>feature_selection_task  >> feature_scaling_task >> gcp_upload_task >> email_notification_task >> trigger_model_pipeline_task
+
+if __name__ == "__main__":
+    dag.cli()

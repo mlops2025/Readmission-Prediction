@@ -102,6 +102,19 @@ x-airflow-common:
       condition: service_healthy
 
 services:
+ 
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    ports:
+      - "5001:5000"
+    command: >
+      mlflow server --backend-store-uri sqlite:///mlflow.db --host 0.0.0.0 --port 5000
+    user: root
+    volumes:
+      - ./dags/src/final_model:/app/final_model
+      - ./config/Key.json:/opt/airflow/config/Key.json
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/config/Key.json
   postgres:
     image: postgres:13
     environment:
@@ -299,6 +312,8 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+  
+  
 
 volumes:
   postgres-db-volume:
