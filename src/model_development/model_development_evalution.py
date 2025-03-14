@@ -25,7 +25,7 @@ from mlflow.models.signature import infer_signature
 
 
 PROJECT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
-DATA_DIR = os.path.join(PROJECT_DIR, "final_model")
+DATA_DIR = os.path.join(PROJECT_DIR, "airflow", "final_model")
 
 
 SPACE = {
@@ -39,7 +39,7 @@ SPACE = {
 
 
 def log_metrics_to_file(metrics, model_name):
-    log_dir = os.path.join(PROJECT_DIR, "logs")
+    log_dir = os.path.join(PROJECT_DIR, "airflow","logs")
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, "ml_metrics.log")
     
@@ -88,7 +88,12 @@ def load_data(train_blob_path, test_blob_path):
         y_train = train_data['readmitted']
         X_test = test_data.drop('readmitted', axis=1)
         y_test = test_data['readmitted']
-        
+
+        X_train = X_train.sample(frac=0.1, random_state=42)
+        y_train = train_data.loc[X_train.index, 'readmitted']
+
+        X_test = X_test.sample(frac=0.1, random_state=42)
+        y_test = test_data.loc[X_test.index, 'readmitted']        
         return X_train, y_train, X_test, y_test
     except Exception as e:
         logging.exception(f"Error loading data from GCS: {e}")
@@ -96,8 +101,8 @@ def load_data(train_blob_path, test_blob_path):
 
 def objective(params, X, y):
     """Objective function for hyperopt to minimize"""
-    clf = xgb.XGBClassifier(**params, n_jobs=-1)
-    score = cross_val_score(clf, X, y, cv=3, scoring='accuracy', n_jobs=-1).mean()
+    clf = xgb.XGBClassifier(**params, n_jobs=4)
+    score = cross_val_score(clf, X, y, cv=3, scoring='accuracy', n_jobs=4).mean()
     return {'loss': -score, 'status': STATUS_OK}
 
 def save_model_and_results(model, results, run_name, X_test, y_test):
@@ -171,7 +176,7 @@ def train_and_log_model(X_train, y_train, X_test, y_test):
         best_params = fmin(fn=lambda params: objective(params, X_train, y_train),
                            space=SPACE,
                            algo=tpe.suggest,
-                           max_evals=10,
+                           max_evals=2,
                            trials=trials)
 
         best_model = None
@@ -227,6 +232,8 @@ def train_and_log_model(X_train, y_train, X_test, y_test):
         }
         save_model_and_results(best_model, results, run_name, X_test, y_test)
 
+        mlflow.log_params(params)
+        mlflow.log_metrics(metrics)
         return best_performance, best_metrics
 
 

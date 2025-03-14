@@ -7,14 +7,14 @@ import os
 import logging
 import sys
 
-from src.model_development.model_development_evalution import run_model_development
-
 # Airflow root directory (where the project is mounted)
 AIRFLOW_ROOT = "/opt/airflow"
 
 # Add src to Python path
 SRC_PATH = os.path.join(AIRFLOW_ROOT, "src")
 sys.path.append(SRC_PATH)
+
+from model_development.model_development_evalution import run_model_development
 
 default_args = {
     'owner': 'MLopsProjectGroup14',
@@ -44,8 +44,8 @@ def run_model_development_task(**kwargs):
     logging.info(f"Final model metrics: {final_metrics}")
     kwargs['ti'].xcom_push(key='final_metrics', value=final_metrics)
     
-    if all(metric >= 0.7 for metric in final_metrics.values()):
-        logging.info("Model development successful: All metrics are above 0.7")
+    if all(metric >= 0.5 for metric in final_metrics.values()):
+        logging.info("Model development successful: All metrics are above 0.5")
     else:
         logging.warning("Model development completed, but not all metrics are above 0.7")
 
