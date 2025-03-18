@@ -1,7 +1,7 @@
 import os
 import io
-from src.logger import logging
-from src.exceptions import CustomException
+from logger import logging
+from exceptions import CustomException
 #import warnings
 from google.cloud import storage
 import json
