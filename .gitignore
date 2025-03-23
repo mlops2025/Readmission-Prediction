@@ -182,3 +182,12 @@ logs/
 
 # igone key files
 key.json
+
+# ignore model files
+*.pkl 
+
+# ignore result json files
+results_*.json
+best_model.json
+
+

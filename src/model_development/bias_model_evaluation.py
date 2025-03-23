@@ -11,23 +11,24 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from fairlearn.postprocessing import ThresholdOptimizer
 from fairlearn.metrics import demographic_parity_ratio, equalized_odds_ratio
-#from model_development.model_development_evalution import train_and_log_model 
+
 
 
 def bias_Evaluation():
     try:
 
-        ROOT_DIR = os.path.abspath(os.path.dirname(__file__) + "/../../")
+        ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
         TRAIN_FILE = os.path.join(ROOT_DIR, 'data', 'processed', 'train_data.csv')
         TEST_FILE = os.path.join(ROOT_DIR, 'data', 'processed', 'test_data.csv')
-        MODEL_DIR = os.path.join(ROOT_DIR,'final_model')
+        MODEL_DIR = os.path.join(ROOT_DIR,'airflow','final_model')
 
 
         try:
             model_files = [f for f in os.listdir(MODEL_DIR) if f.endswith('.pkl')]
             
-            model_files.sort(reverse=True)  # Sort to get the latest one
+            model_files.sort(reverse=False)  # Sort to get the latest one
             latest_model_path = os.path.join(MODEL_DIR, model_files[0])
+            logging.info(f'Latest model path: {latest_model_path}')
 
             with open(latest_model_path, 'rb') as f:
                 model = pickle.load(f)

@@ -2,7 +2,6 @@ import os
 import io
 from logger import logging
 from exceptions import CustomException
-#import warnings
 from google.cloud import storage
 import json
 from datetime import datetime
@@ -11,14 +10,10 @@ import xgboost as xgb
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import mlflow
-#import mlflow.sklearn
-#from mlflow.models import infer_signature
 from hyperopt import hp, fmin, tpe, Trials, STATUS_OK
 from hyperopt.pyll import scope
 import pickle 
 import numpy as np
-
-import mlflow
 import mlflow.xgboost
 from mlflow.models.signature import infer_signature
 
@@ -148,7 +143,7 @@ def save_model_and_results(model, results, run_name, X_test, y_test):
     
     return results_path  # Return the path of the JSON file
 
-def evaluate_model_performance(y_test, y_pred, threshold=0.4):
+def evaluate_model_performance(y_test, y_pred, threshold=0.7):
     accuracy = accuracy_score(y_test, y_pred)
     precision, recall, f1_score, _ = precision_recall_fscore_support(y_test, y_pred, average='weighted')
     

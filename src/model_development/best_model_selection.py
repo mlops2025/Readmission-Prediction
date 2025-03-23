@@ -6,32 +6,33 @@ import mlflow
 import mlflow.sklearn
 from exceptions import CustomException
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
+from logger import logging
 
-ROOT_DIR = os.path.abspath(os.path.dirname(__file__) + "/../../")
-DATA_DIR = os.path.join(ROOT_DIR,'final_model')
+ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
+DATA_DIR = os.path.join(ROOT_DIR, "airflow", "final_model")
 
-mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_tracking_uri("http://mlflow:5000")
 
 def load_metrics(file_path):
     """Load model metrics from a JSON file."""
     try:
         with open(file_path, 'r') as f:
             metrics = json.load(f)
-        logger.info(f"Loaded metrics from {file_path}")
+        logging.info(f"Loaded metrics from {file_path}")
         return metrics
     except Exception as e:
-        logger.error(f"Failed to load metrics from {file_path}: {e}")
+        logging.error(f"Failed to load metrics from {file_path}: {e}")
         return None
 
 def get_all_model_metrics():
     """Retrieve all model metrics files in DATA_DIR."""
     metrics_files = [f for f in os.listdir(DATA_DIR) if f.startswith("results_") and f.endswith(".json")]
     if not metrics_files:
-        logger.warning("No model metrics files found in DATA_DIR.")
+        logging.warning("No model metrics files found in DATA_DIR.")
     else:
-        logger.info(f"Found {len(metrics_files)} metrics files in DATA_DIR.")
+        logging.info(f"Found {len(metrics_files)} metrics files in DATA_DIR.")
     return [os.path.join(DATA_DIR, f) for f in metrics_files]
 
 def simplify_metrics(metrics):
@@ -53,7 +54,7 @@ def log_best_model_in_mlflow(best_model_path, best_metrics):
             if isinstance(metric_value, (int, float)):
                 mlflow.log_metric(metric_name, metric_value)
             else:
-                logger.warning(f"Skipping non-numeric metric {metric_name}: {metric_value}")
+                logging.warning(f"Skipping non-numeric metric {metric_name}: {metric_value}")
 
         # Log and register the model
         with open(best_model_path, 'rb') as model_file:
@@ -76,7 +77,7 @@ def log_best_model_in_mlflow(best_model_path, best_metrics):
                 stage="Staging"
             )
         
-        logger.info(f"Logged and registered the best model '{model_name}' in MLflow and transitioned to 'Staging' stage.")
+        logging.info(f"Logged and registered the best model '{model_name}' in MLflow and transitioned to 'Staging' stage.")
 
 def get_test_file_paths(best_model_path):
     """
@@ -90,8 +91,8 @@ def get_test_file_paths(best_model_path):
     X_test_path = os.path.join(DATA_DIR, f"{test_file_name}_X_test.csv")
     y_test_path = os.path.join(DATA_DIR, f"{test_file_name}_y_test.csv")
 
-    logger.info(f"Identified X_test path: {X_test_path}")
-    logger.info(f"Identified y_test path: {y_test_path}")
+    logging.info(f"Identified X_test path: {X_test_path}")
+    logging.info(f"Identified y_test path: {y_test_path}")
 
     return X_test_path, y_test_path
 
@@ -99,7 +100,7 @@ def compare_and_select_best():
     """Compare models from different sessions and update the best model if necessary."""
     all_metrics_files = get_all_model_metrics()
     if not all_metrics_files:
-        logger.error("No metrics files available for comparison. Exiting.")
+        logging.error("No metrics files available for comparison. Exiting.")
         return
 
     best_metrics = None
@@ -109,7 +110,7 @@ def compare_and_select_best():
     for metrics_file in all_metrics_files:
         metrics = load_metrics(metrics_file)
         if metrics is None:
-            logger.warning(f"Skipping {metrics_file} due to loading issues.")
+            logging.warning(f"Skipping {metrics_file} due to loading issues.")
             continue
 
         # Update best model if this model's accuracy is higher
@@ -117,21 +118,21 @@ def compare_and_select_best():
             best_metrics = metrics
             model_file = metrics_file.replace("results_", "xgboost_").replace(".json", ".pkl")
             best_model_path = os.path.join(DATA_DIR, model_file)
-            logger.info(f"New best model found with accuracy {metrics['accuracy']} from {metrics_file}")
+            logging.info(f"New best model found with accuracy {metrics['accuracy']} from {metrics_file}")
 
     # Load previously saved best model metrics, if any
     best_metrics_path = os.path.join(DATA_DIR, "best_model.json")
     if os.path.exists(best_metrics_path):
         previous_best_metrics = load_metrics(best_metrics_path)
-        if previous_best_metrics and previous_best_metrics.get('accuracy', 0) >= best_metrics['accuracy']:
-            logger.info("Previous best model still performs better. No update made.")
+        if previous_best_metrics and previous_best_metrics.get('accuracy', 0) > best_metrics['accuracy']:
+            logging.info("Previous best model still performs better. No update made.")
             # Call get_test_file_paths to get X_test and y_test paths
             X_test_path, y_test_path = get_test_file_paths(best_model_path)
-            logger.info(f'Compare and select best-- X_test_path: {X_test_path}')
-            logger.info(f'y_test_path: {y_test_path}')
+            logging.info(f'Compare and select best-- X_test_path: {X_test_path}')
+            logging.info(f'y_test_path: {y_test_path}')
             return best_model_path, X_test_path, y_test_path    # Return the path to the previous best model
         else:
-            logger.info("Previous best model is being replaced by a new model.")
+            logging.info("Previous best model is being replaced by a new model.")
 
     # Update the best model and metrics if a new best model is found
     try:
@@ -141,13 +142,13 @@ def compare_and_select_best():
         # Save metrics to JSON
         with open(best_metrics_path, 'w') as f:
             json.dump(flattened_metrics, f, indent=4)
-        logger.info(f"Saved new best model metrics to {best_metrics_path}")
+        logging.info(f"Saved new best model metrics to {best_metrics_path}")
 
         # Save the model file as the best model
         best_model_file = os.path.join(DATA_DIR, "best_model.pkl")
         with open(best_model_path, 'rb') as src, open(best_model_file, 'wb') as dest:
             dest.write(src.read())
-        logger.info(f"Saved new best model file to {best_model_file}")
+        logging.info(f"Saved new best model file to {best_model_file}")
 
         # Log best model and metrics in MLflow
         log_best_model_in_mlflow(best_model_file, flattened_metrics)
@@ -155,16 +156,16 @@ def compare_and_select_best():
         # Call get_test_file_paths to get X_test and y_test paths
         X_test_path, y_test_path = get_test_file_paths(best_model_path)
 
-        logger.info(f'Compare and select best-- X_test_path: {X_test_path}')
-        logger.info(f'y_test_path: {y_test_path}')
+        logging.info(f'Compare and select best-- X_test_path: {X_test_path}')
+        logging.info(f'y_test_path: {y_test_path}')
 
          # Return the path to the new best model file
         return best_model_file, X_test_path, y_test_path
 
     except Exception as e:
-        logger.error(f"Failed to save the best model or metrics: {e}")
+        logging.error(f"Failed to save the best model or metrics: {e}")
 
 if __name__ == "__main__":
-    logger.info("Starting model comparison and selection process.")
+    logging.info("Starting model comparison and selection process.")
     compare_and_select_best()
-    logger.info("Model comparison and selection process complete.")
+    logging.info("Model comparison and selection process complete.")
