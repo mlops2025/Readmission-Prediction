@@ -135,4 +135,4 @@ email_notification_end_task = EmailOperator(
 )
 
 # model_development_task
-email_notification_start_task >> compare_best_model_task >> bias_eval_task >> upload_to_gcs_task >> email_notification_end_task
+email_notification_start_task >> model_development_task >> compare_best_model_task >> bias_eval_task >> upload_to_gcs_task >> email_notification_end_task

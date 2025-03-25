@@ -171,7 +171,7 @@ def train_and_log_model(X_train, y_train, X_test, y_test):
         best_params = fmin(fn=lambda params: objective(params, X_train, y_train),
                            space=SPACE,
                            algo=tpe.suggest,
-                           max_evals=2,
+                           max_evals=8,
                            trials=trials)
 
         best_model = None
@@ -232,7 +232,7 @@ def train_and_log_model(X_train, y_train, X_test, y_test):
         return best_performance, best_metrics
 
 
-def run_model_development(train_path, test_path, max_attempts=3):
+def run_model_development(train_path, test_path, max_attempts=1):
     setup_mlflow()
     X_train, y_train, X_test, y_test = load_data(train_path, test_path)
     attempt = 0
