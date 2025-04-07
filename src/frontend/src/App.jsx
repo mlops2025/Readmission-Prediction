@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import LandingPage from "./LandingPage";
 import PatientDetails from "./PatientDetails";
+import SearchPatient from "./SearchPage"; 
 
 function App() {
   return (
@@ -16,7 +17,7 @@ function App() {
             >
               Get Started
             </button>
-            <Link to="/patient-details">
+            <Link to="/search">
               <button className="border-2 border-teal px-6 py-2 rounded-full font-medium bg-teal hover:bg-white transition">
                 View Patient Details
               </button>
@@ -28,6 +29,7 @@ function App() {
       <main className="pt-24">
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/search" element={<SearchPatient />} />
           <Route path="/patient-details" element={<PatientDetails />} />
         </Routes>
       </main>

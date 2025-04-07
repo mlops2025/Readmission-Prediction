@@ -13,7 +13,7 @@ const PredictionForm = () => {
   const [formData, setFormData] = useState({
     fname: "",
     lname: "",
-    age: "",
+    dob: "",
     meds: [],
     gender: "",
     race: "",
@@ -34,18 +34,26 @@ const PredictionForm = () => {
     diabetic_medication: "",
     change_num: "",
   });
+
   const [open, setOpen] = useState(false);
   const [predictedResult, setPredictedResult] = useState(null);
   const [step, setStep] = useState(1);
+  
+  const calculateAgeFromDOB = (dob) => {
+    const birthDate = dayjs(dob);
+    const today = dayjs();
+    return today.diff(birthDate, "year");
+  };
+  const sendToFastAPI = async () => {
+    const payload = transformDataForBackend();
 
-  const sendToFastAPI = async (data) => {
     try {
       const response = await fetch("http://localhost:8000/predict", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -53,38 +61,38 @@ const PredictionForm = () => {
       }
 
       const result = await response.json();
-      console.log("Prediction result:", result);
-      // setPredictedResult(result.predicted_result);
-      setPredictedResult("No");
+      setPredictedResult(result.prediction === 1 ? "Yes" : "No");
       setOpen(true);
     } catch (error) {
-      console.error("Error sending data to FastAPI:", error.message, data);
+      console.error("Prediction API error:", error.message);
     }
   };
-
+  const transformDataForBackend = () => {
+    return {
+      ...formData,
+      dob: calculateAgeFromDOB(formData.dob),
+      time_in_hospital: Number(formData.time_in_hospital),
+      num_lab_procedures: Number(formData.num_lab_procedures),
+      num_procedures: Number(formData.num_procedures),
+      num_medications: Number(formData.num_medications),
+      number_outpatient: Number(formData.number_outpatient),
+      number_emergency: Number(formData.number_emergency),
+      number_inpatient: Number(formData.number_inpatient),
+      number_diagnoses: Number(formData.number_diagnoses),
+      diabetic_medication: formData.diabetic_medication === "Yes" ? 1 : 0,
+      change_num: formData.change_num === "Yes" ? 1 : 0,
+    };
+  };
   const handleChange = (e) => {
     const { name, value } = e.target;
-  
-    if (name === "age") {
-      if (value === "" || (Number(value) >= 1 && Number(value) <= 150)) {
-        setFormData({ ...formData, [name]: value });
-      }
-      return;
-    }
-  
     setFormData({ ...formData, [name]: value });
-  };  
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    sendToFastAPI(formData);
-    setOpen(true);
   };
+
   const validateStep1 = () => {
     const requiredFields = [
       "fname",
       "lname",
-      "age",
+      "dob",
       "meds",
       "gender",
       "race",
@@ -95,18 +103,41 @@ const PredictionForm = () => {
       "diag_2",
       "diag_3",
     ];
+    return requiredFields.every(
+      (field) =>
+        formData[field] !== "" &&
+        formData[field] !== null &&
+        (!Array.isArray(formData[field]) || formData[field].length > 0)
+    );
+  };
 
-    for (let field of requiredFields) {
-      if (
-        formData[field] === "" ||
-        formData[field] === null ||
-        (Array.isArray(formData[field]) && formData[field].length === 0)
-      ) {
-        return false;
-      }
-    }
+  const numericField = (label, name, min, max) => (
+    <TextField
+      label={label}
+      name={name}
+      value={formData[name]}
+      type="number"
+      variant="outlined"
+      fullWidth
+      onChange={(e) => {
+        const value = e.target.value;
+        if (value === "" || (Number(value) >= min && Number(value) <= max)) {
+          handleChange(e);
+        }
+      }}
+      inputProps={{
+        min,
+        max,
+        inputMode: "numeric",
+        pattern: "[0-9]*",
+      }}
+      required
+    />
+  );
 
-    return true;
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    sendToFastAPI(formData);
   };
 
   const diag = [
@@ -147,21 +178,14 @@ const PredictionForm = () => {
                     required
                   />
                   <TextField
-                    label="Age"
-                    name="age"
-                    value={formData.age}
-                    type="number"
+                    label="Date of Birth"
+                    name="dob"
+                    type="date"
+                    value={formData.dob}
+                    onChange={handleChange}
                     variant="outlined"
                     fullWidth
-                    onChange={(e) => {
-                      handleChange(e);
-                    }}
-                    inputProps={{
-                      min: 1,
-                      max: 150,
-                      inputMode: "numeric",
-                      pattern: "[0-9]*",
-                    }}
+                    InputLabelProps={{ shrink: true }}
                     required
                   />
                   <FormControl fullWidth required>
@@ -192,7 +216,6 @@ const PredictionForm = () => {
                       ))}
                     </Select>
                   </FormControl>
-
                   <TextField
                     label="Gender"
                     name="gender"
@@ -203,7 +226,6 @@ const PredictionForm = () => {
                     onChange={handleChange}
                     required
                   >
-                    <MenuItem value="">Select Gender</MenuItem>
                     {["Male", "Female"].map((item) => (
                       <MenuItem key={item} value={item}>
                         {item}
@@ -220,7 +242,6 @@ const PredictionForm = () => {
                     onChange={handleChange}
                     required
                   >
-                    <MenuItem value="">Select Race</MenuItem>
                     {["Caucasian", "AfricanAmerican", "Other"].map((item) => (
                       <MenuItem key={item} value={item}>
                         {item}
@@ -237,7 +258,6 @@ const PredictionForm = () => {
                     onChange={handleChange}
                     required
                   >
-                    <MenuItem value="">Select Admission Type</MenuItem>
                     {[
                       "Emergency",
                       "Urgent",
@@ -261,7 +281,6 @@ const PredictionForm = () => {
                     onChange={handleChange}
                     required
                   >
-                    <MenuItem value="">Select Discharge Disposition</MenuItem>
                     {[
                       "Discharged to Home",
                       "Care/Nursing",
@@ -283,17 +302,16 @@ const PredictionForm = () => {
                     onChange={handleChange}
                     required
                   >
-                    <MenuItem value="">Select Admission Source</MenuItem>
                     {["Referral", "Emergency room", "Others"].map((item) => (
                       <MenuItem key={item} value={item}>
                         {item}
                       </MenuItem>
                     ))}
                   </TextField>
-                  {["diag_1", "diag_2", "diag_3"].map((diagno, index) => (
+                  {["diag_1", "diag_2", "diag_3"].map((diagno, idx) => (
                     <TextField
                       key={diagno}
-                      label={`Diagnosis ${index + 1}`}
+                      label={`Diagnosis ${idx + 1}`}
                       name={diagno}
                       value={formData[diagno]}
                       select
@@ -302,7 +320,6 @@ const PredictionForm = () => {
                       onChange={handleChange}
                       required
                     >
-                      <MenuItem value="">Select Diagnosis {index + 1}</MenuItem>
                       {diag.map((item) => (
                         <MenuItem key={item} value={item}>
                           {item}
@@ -314,197 +331,68 @@ const PredictionForm = () => {
               )}
               {step === 2 && (
                 <>
+                  {numericField("Time in Hospital", "time_in_hospital", 1, 14)}
+                  {numericField(
+                    "Number of Lab Procedures",
+                    "num_lab_procedures",
+                    1,
+                    132
+                  )}
+                  {numericField(
+                    "Number of Procedures",
+                    "num_procedures",
+                    0,
+                    10
+                  )}
+                  {numericField(
+                    "Number of Medications",
+                    "num_medications",
+                    1,
+                    100
+                  )}
+                  {numericField(
+                    "Number of Outpatient Visits",
+                    "number_outpatient",
+                    0,
+                    50
+                  )}
+                  {numericField(
+                    "Number of Emergency Visits",
+                    "number_emergency",
+                    0,
+                    100
+                  )}
+                  {numericField(
+                    "Number of Inpatient Visits",
+                    "number_inpatient",
+                    0,
+                    50
+                  )}
+                  {numericField(
+                    "Number of Diagnoses",
+                    "number_diagnoses",
+                    1,
+                    20
+                  )}
                   <TextField
-                    label="Time in Hospital"
-                    name="time_in_hospital"
-                    value={formData.time_in_hospital}
-                    type="number"
-                    variant="outlined"
-                    fullWidth
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      if (value >= 1 && value <= 150) {
-                        handleChange(e);
-                      }
-                    }}
-                    inputProps={{
-                      min: 1,
-                      max: 150,
-                      inputMode: "numeric",
-                      pattern: "[0-9]*",
-                    }}
-                    required
-                  />
-                  <TextField
-                    label="Number of Lab Procedures"
-                    name="num_lab_procedures"
-                    value={formData.num_lab_procedures}
-                    type="number"
-                    variant="outlined"
-                    fullWidth
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      if (value >= 1 && value <= 150) {
-                        handleChange(e);
-                      }
-                    }}
-                    inputProps={{
-                      min: 1,
-                      max: 150,
-                      inputMode: "numeric",
-                      pattern: "[0-9]*",
-                    }}
-                    required
-                  />
-                  <TextField
-                    label="Number of Procedures"
-                    name="num_procedures"
-                    value={formData.num_procedures}
-                    type="number"
-                    variant="outlined"
-                    fullWidth
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      if (value >= 1 && value <= 150) {
-                        handleChange(e);
-                      }
-                    }}
-                    inputProps={{
-                      min: 1,
-                      max: 150,
-                      inputMode: "numeric",
-                      pattern: "[0-9]*",
-                    }}
-                    required
-                  />
-                  <TextField
-                    label="Number of Medications"
-                    name="num_medications"
-                    value={formData.num_medications}
-                    type="number"
-                    variant="outlined"
-                    fullWidth
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      if (value >= 1 && value <= 150) {
-                        handleChange(e);
-                      }
-                    }}
-                    inputProps={{
-                      min: 1,
-                      max: 150,
-                      inputMode: "numeric",
-                      pattern: "[0-9]*",
-                    }}
-                    required
-                  />
-                  <TextField
-                    label="Number of Outpatient"
-                    name="number_outpatient"
-                    value={formData.number_outpatient}
-                    type="number"
-                    variant="outlined"
-                    fullWidth
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      if (value >= 1 && value <= 150) {
-                        handleChange(e);
-                      }
-                    }}
-                    inputProps={{
-                      min: 1,
-                      max: 150,
-                      inputMode: "numeric",
-                      pattern: "[0-9]*",
-                    }}
-                    required
-                  />
-                  <TextField
-                    label="Number of Emergency"
-                    name="number_emergency"
-                    value={formData.number_emergency}
-                    type="number"
-                    variant="outlined"
-                    fullWidth
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      if (value >= 1 && value <= 150) {
-                        handleChange(e);
-                      }
-                    }}
-                    inputProps={{
-                      min: 1,
-                      max: 150,
-                      inputMode: "numeric",
-                      pattern: "[0-9]*",
-                    }}
-                    required
-                  />
-                  <TextField
-                    label="Number of Inpatient"
-                    name="number_inpatient"
-                    value={formData.number_inpatient}
-                    type="number"
-                    variant="outlined"
-                    fullWidth
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      if (value >= 1 && value <= 150) {
-                        handleChange(e);
-                      }
-                    }}
-                    inputProps={{
-                      min: 1,
-                      max: 150,
-                      inputMode: "numeric",
-                      pattern: "[0-9]*",
-                    }}
-                    required
-                  />
-                  <TextField
-                    label="Number of Diagnoses"
-                    name="number_diagnoses"
-                    value={formData.number_diagnoses}
-                    type="number"
-                    variant="outlined"
-                    fullWidth
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      if (value >= 1 && value <= 150) {
-                        handleChange(e);
-                      }
-                    }}
-                    inputProps={{
-                      min: 1,
-                      max: 150,
-                      inputMode: "numeric",
-                      pattern: "[0-9]*",
-                    }}
-                    required
-                  />
-                  <TextField
-                    label="Change Number"
+                    label="Change in Diabetic Medication"
                     name="change_num"
                     value={formData.change_num}
-                    type="number"
+                    select
                     variant="outlined"
                     fullWidth
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      if (value >= 1 && value <= 150) {
-                        handleChange(e);
-                      }
-                    }}
-                    inputProps={{
-                      min: 1,
-                      max: 150,
-                      inputMode: "numeric",
-                      pattern: "[0-9]*",
-                    }}
+                    onChange={handleChange}
                     required
-                  />
+                  >
+                    {["Yes", "No"].map((item) => (
+                      <MenuItem key={item} value={item}>
+                        {item}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+
                   <TextField
-                    label="Discharge Disposition"
+                    label="Diabetic Medication"
                     name="diabetic_medication"
                     value={formData.diabetic_medication}
                     select
@@ -513,7 +401,6 @@ const PredictionForm = () => {
                     onChange={handleChange}
                     required
                   >
-                    <MenuItem value="">Select Discharge Disposition</MenuItem>
                     {["Yes", "No"].map((item) => (
                       <MenuItem key={item} value={item}>
                         {item}
@@ -523,30 +410,25 @@ const PredictionForm = () => {
                 </>
               )}
             </div>
-
             <Box className="flex justify-between mt-8">
               {step > 1 && (
                 <button
-                  className="border-2 border-teal px-6 py-2 rounded-full font-medium hover:bg-teal hover:opacity-95 transition"
-                  onClick={() => setStep(step - 1)}
                   type="button"
+                  onClick={() => setStep(step - 1)}
+                  className="border-2 border-teal px-6 py-2 rounded-full font-medium hover:bg-teal hover:opacity-95 transition"
                 >
                   Back
                 </button>
               )}
               {step < 2 && (
                 <button
-                  className="border-2 border-teal px-6 py-2 rounded-full font-medium bg-teal  hover:bg-white transition"
-                  onClick={() => {
-                    if (validateStep1()) {
-                      setStep(step + 1);
-                    } else {
-                      alert(
-                        "Please fill all required fields before continuing."
-                      );
-                    }
-                  }}
                   type="button"
+                  onClick={() =>
+                    validateStep1()
+                      ? setStep(step + 1)
+                      : alert("Please fill all required fields")
+                  }
+                  className="border-2 border-teal px-6 py-2 rounded-full font-medium bg-teal  hover:bg-white transition"
                 >
                   Next
                 </button>
@@ -561,7 +443,11 @@ const PredictionForm = () => {
               )}
             </Box>
           </form>
-          <Modal open={open} onClose={() => setOpen(false)}>
+
+          <Modal
+            open={open && predictedResult !== null}
+            onClose={() => setOpen(false)}
+          >
             <Box className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-md border border-gray-200 rounded-3xl shadow-2xl p-8 w-[440px] max-w-[90%] animate-fadeInUp">
               <div
                 className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl animate-bounceSlow shadow-md ${
@@ -581,13 +467,11 @@ const PredictionForm = () => {
                   ? "Readmission Risk Detected"
                   : "All Clear!"}
               </div>
-
               <div className="text-center text-gray-700 text-md mb-8 leading-relaxed">
                 {predictedResult === "Yes"
                   ? "Our prediction model indicates a high risk of readmission. Please take action."
                   : "No risk detected. Continue with standard care and follow-up."}
               </div>
-
               <div className="flex justify-center mt-2">
                 <button
                   onClick={() => {
