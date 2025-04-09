@@ -38,7 +38,7 @@ const PredictionForm = () => {
   const [open, setOpen] = useState(false);
   const [predictedResult, setPredictedResult] = useState(null);
   const [step, setStep] = useState(1);
-  
+
   const calculateAgeFromDOB = (dob) => {
     const birthDate = dayjs(dob);
     const today = dayjs();
@@ -152,7 +152,7 @@ const PredictionForm = () => {
 
   return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-3/4 bg-white flex items-center justify-center p-6 drop-shadow-xl rounded-3xl">
+      <div className="w-3/4 bg-white flex items-center justify-center p-6 drop-shadow-2xl rounded-3xl">
         <div className="p-6 w-full">
           <div className="text-2xl font-bold mb-6">Prediction Form</div>
           <form onSubmit={handleSubmit}>
