@@ -20,6 +20,7 @@ from data_preprocessing.feature_selection import feature_selection
 from data_preprocessing.feature_scaling import scaling
 from data_preprocessing.traintest import train_test_upload
 from data_preprocessing.bias import Bias_Dataset_Evaluation
+from data_preprocessing.push_to_database import upload_patient_data 
 # Define data path
 DATA_PATH = os.path.join(AIRFLOW_ROOT, "data", "diabetic_data.csv")
 
@@ -169,8 +170,8 @@ feature_scaling_task = PythonOperator(
 )
 
 gcp_upload_task = PythonOperator(
-    task_id='gcp_upload_task',
-    python_callable= train_test_upload,
+    task_id='upload_patient_data_task',
+    python_callable= upload_patient_data,
     op_args= [feature_scaling_task.output],
     on_failure_callback=notify_failure,
     dag=dag,

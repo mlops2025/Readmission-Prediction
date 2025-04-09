@@ -16,6 +16,9 @@ import pickle
 import numpy as np
 import mlflow.xgboost
 from mlflow.models.signature import infer_signature
+from sqlalchemy import create_engine
+from sklearn.model_selection import train_test_split
+from dotenv import load_dotenv
 
 
 
@@ -55,44 +58,95 @@ KEY_PATH = "/opt/airflow/config/key.json"
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = KEY_PATH
 bucket_name = "readmission_prediction"
 
-def load_data(train_blob_path, test_blob_path):
-    """Load train and test data from GCS bucket."""
+def load_data():
     try:
-        # Initialize Google Cloud Storage client
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(bucket_name)
+        # Load environment variables from the .env file
+        load_dotenv()
+
+        # Retrieve the environment variables
+        DB_NAME = os.getenv('DB_NAME')
+        DB_USER = os.getenv('DB_USER')
+        DB_PASSWORD = os.getenv('DB_PASSWORD')
+        DB_HOST = os.getenv('DB_HOST')
+        DB_PORT = os.getenv('DB_PORT')
+
+        engine = create_engine(
+            f'postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+        )
+
+        # === 2. Load data from patients_data ===
+        df = pd.read_sql('SELECT * FROM patients_data', con=engine)
+        logging.info(f"Loaded {len(df)} records from patients_data table.")
+
+        # === 3. Drop unwanted columns ===
+        drop_cols = ['f_name', 'l_name', 'dob', 'predict']
+        df.drop(columns=drop_cols, inplace=True, errors='ignore')
+        logging.info(f"Dropped columns: {drop_cols}")
+
+        # === 4. Split into features and target ===
+        if 'readmitted' not in df.columns:
+            raise ValueError("Target column 'readmitted' not found in data.")
         
-        # Load train data from GCS
-        train_blob = bucket.blob(train_blob_path)
-        if not train_blob.exists():
-            logging.error(f"Train file {train_blob_path} not found in bucket {bucket_name}")
-            return None
-        train_data = pd.read_csv(io.BytesIO(train_blob.download_as_string()))
-        logging.info(f"Loaded train data from {train_blob_path} with shape {train_data.shape}")
+        X = df.drop(columns=['readmitted'])
+        y = df['readmitted']
 
-        # Load test data from GCS
-        test_blob = bucket.blob(test_blob_path)
-        if not test_blob.exists():
-            logging.error(f"Test file {test_blob_path} not found in bucket {bucket_name}")
-            return None
-        test_data = pd.read_csv(io.BytesIO(test_blob.download_as_string()))
-        logging.info(f"Loaded test data from {test_blob_path} with shape {test_data.shape}")
+        # === 5. Train-test split ===
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+        logging.info(f"Data split into train and test sets. Train size: {len(X_train)}, Test size: {len(X_test)}")
 
-        # Separate features and target
-        X_train = train_data.drop('readmitted', axis=1)
-        y_train = train_data['readmitted']
-        X_test = test_data.drop('readmitted', axis=1)
-        y_test = test_data['readmitted']
+        frac = 0.05
+        X_train = X_train.sample(frac=frac, random_state=42)
+        y_train = y_train.loc[X_train.index]
 
-        X_train = X_train.sample(frac=0.1, random_state=42)
-        y_train = train_data.loc[X_train.index, 'readmitted']
+        X_test = X_test.sample(frac=frac, random_state=42)
+        y_test = y_test.loc[X_test.index] 
 
-        X_test = X_test.sample(frac=0.1, random_state=42)
-        y_test = test_data.loc[X_test.index, 'readmitted']        
         return X_train, y_train, X_test, y_test
+
     except Exception as e:
-        logging.exception(f"Error loading data from GCS: {e}")
+        logging.error(f"Error loading data: {e}")
         raise
+
+# def load_data(train_blob_path, test_blob_path):
+#     """Load train and test data from GCS bucket."""
+#     try:
+#         # Initialize Google Cloud Storage client
+#         storage_client = storage.Client()
+#         bucket = storage_client.bucket(bucket_name)
+        
+#         # Load train data from GCS
+#         train_blob = bucket.blob(train_blob_path)
+#         if not train_blob.exists():
+#             logging.error(f"Train file {train_blob_path} not found in bucket {bucket_name}")
+#             return None
+#         train_data = pd.read_csv(io.BytesIO(train_blob.download_as_string()))
+#         logging.info(f"Loaded train data from {train_blob_path} with shape {train_data.shape}")
+
+#         # Load test data from GCS
+#         test_blob = bucket.blob(test_blob_path)
+#         if not test_blob.exists():
+#             logging.error(f"Test file {test_blob_path} not found in bucket {bucket_name}")
+#             return None
+#         test_data = pd.read_csv(io.BytesIO(test_blob.download_as_string()))
+#         logging.info(f"Loaded test data from {test_blob_path} with shape {test_data.shape}")
+
+#         # Separate features and target
+#         X_train = train_data.drop('readmitted', axis=1)
+#         y_train = train_data['readmitted']
+#         X_test = test_data.drop('readmitted', axis=1)
+#         y_test = test_data['readmitted']
+
+#         X_train = X_train.sample(frac=0.1, random_state=42)
+#         y_train = train_data.loc[X_train.index, 'readmitted']
+
+#         X_test = X_test.sample(frac=0.1, random_state=42)
+#         y_test = test_data.loc[X_test.index, 'readmitted']        
+#         return X_train, y_train, X_test, y_test
+#     except Exception as e:
+#         logging.exception(f"Error loading data from GCS: {e}")
+#         raise
 
 def objective(params, X, y):
     """Objective function for hyperopt to minimize"""
@@ -171,7 +225,7 @@ def train_and_log_model(X_train, y_train, X_test, y_test):
         best_params = fmin(fn=lambda params: objective(params, X_train, y_train),
                            space=SPACE,
                            algo=tpe.suggest,
-                           max_evals=8,
+                           max_evals=2,
                            trials=trials)
 
         best_model = None
@@ -232,9 +286,9 @@ def train_and_log_model(X_train, y_train, X_test, y_test):
         return best_performance, best_metrics
 
 
-def run_model_development(train_path, test_path, max_attempts=1):
+def run_model_development(train_path, test_path, max_attempts=2):
     setup_mlflow()
-    X_train, y_train, X_test, y_test = load_data(train_path, test_path)
+    X_train, y_train, X_test, y_test = load_data()
     attempt = 0
     while attempt < max_attempts:
         logging.info(f"Starting model development attempt {attempt + 1}")
