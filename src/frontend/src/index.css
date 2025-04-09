@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-    --color-teal: #dcf2f1;
+    --color-teal: #dbeafe;
   }
-  /* Tailwind config or global CSS */
+
 @keyframes fadeInUp {
   0% {
     opacity: 0;

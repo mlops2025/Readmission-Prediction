@@ -56,7 +56,7 @@ const SearchPatient = () => {
 
   return (
     <div className="flex items-center justify-center h-screen">
-      <div className="w-1/2 bg-white p-8 rounded-3xl drop-shadow-xl">
+      <div className="w-1/2 bg-white p-8 rounded-3xl drop-shadow-2xl">
         <h2 className="text-2xl font-bold mb-6 text-center">Search Patient</h2>
         <Box className="flex flex-col gap-6">
           <TextField

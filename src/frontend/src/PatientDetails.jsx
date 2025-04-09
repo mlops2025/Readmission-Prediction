@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Switch, Button } from "@mui/material";
+import { Switch } from "@mui/material";
 
 const fieldLabels = {
   fname: "First Name",
