@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Switch } from "@mui/material";
+import { useLocation } from "react-router-dom";
 
 const fieldLabels = {
   fname: "First Name",
@@ -28,24 +29,18 @@ const fieldLabels = {
 };
 
 const PatientDetailsPage = () => {
+  const location = useLocation();
+  const passedPatient = location.state;
+
   const [patient, setPatient] = useState(null);
   const [actualResult, setActualResult] = useState(null);
   const [predictedResult, setPredictedResult] = useState("No");
 
   useEffect(() => {
-    const fetchPatient = async () => {
-      try {
-        const response = await fetch("http://localhost:8000/get-patient");
-        if (!response.ok) throw new Error("Failed to fetch patient data");
-        const data = await response.json();
-        setPatient(data);
-      } catch (err) {
-        console.error("Fetch error:", err);
-      }
-    };
-
-    fetchPatient();
-  }, []);
+    if (passedPatient) {
+      setPatient(passedPatient);
+    }
+  }, [passedPatient]);
 
   const handleUpdate = async () => {
     if (!patient) return;

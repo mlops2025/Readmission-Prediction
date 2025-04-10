@@ -22,37 +22,38 @@ const SearchPatient = () => {
     searchData.lname.trim() !== "" &&
     searchData.dob.trim() !== "";
 
-  const handleSearch = async () => {
-    if (!isFormValid) return;
-
-    setLoading(true);
-    try {
-      const response = await fetch("http://localhost:8000/search-patient", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(searchData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Patient not found");
-      }
-
-      const data = await response.json();
-
-      if (data && data.patient_id) {
-        navigate(`/patient-details?id=${data.patient_id}`);
-      } else {
+    const handleSearch = async () => {
+      if (!isFormValid) return;
+    
+      setLoading(true);
+      try {
+        const response = await fetch("http://localhost:8000/search-patient", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(searchData),
+        });
+    
+        if (!response.ok) {
+          throw new Error("Patient not found");
+        }
+    
+        const data = await response.json();
+    
+        if (data) {
+          navigate("/patient-details", { state: data });
+        } else {
+          alert("Patient not found");
+        }
+      } catch (error) {
+        console.error("Search error:", error);
         alert("Patient not found");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Search error:", error);
-      alert("Patient not found");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    
 
   return (
     <div className="flex items-center justify-center h-screen">
