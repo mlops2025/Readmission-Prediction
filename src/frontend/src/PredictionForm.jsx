@@ -39,11 +39,6 @@ const PredictionForm = () => {
   const [predictedResult, setPredictedResult] = useState(null);
   const [step, setStep] = useState(1);
 
-  const calculateAgeFromDOB = (dob) => {
-    const birthDate = dayjs(dob);
-    const today = dayjs();
-    return today.diff(birthDate, "year");
-  };
   const sendToFastAPI = async () => {
     const payload = transformDataForBackend();
 
@@ -70,7 +65,7 @@ const PredictionForm = () => {
   const transformDataForBackend = () => {
     return {
       ...formData,
-      dob: calculateAgeFromDOB(formData.dob),
+      dob: Date(formData.dob),
       time_in_hospital: Number(formData.time_in_hospital),
       num_lab_procedures: Number(formData.num_lab_procedures),
       num_procedures: Number(formData.num_procedures),
