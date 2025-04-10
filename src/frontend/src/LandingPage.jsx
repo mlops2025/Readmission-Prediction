@@ -81,7 +81,7 @@ const Footer = () => {
 const LandingPage = () => {
   return (
     <main className="bg-white min-h-screen font-sans scroll-smooth">
-      <div className=" bg-gradient-to-br from-blue-100 to-white">
+      <div className="bg-gradient-to-br from-blue-100 to-white">
         <HeroSection />
         <InfoCards />
       </div>

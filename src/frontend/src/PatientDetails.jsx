@@ -24,42 +24,32 @@ const fieldLabels = {
   number_diagnoses: "Number of Diagnoses",
   diabetic_medication: "Diabetic Medication",
   change_num: "Change Number",
+  dob: "Date of Birth",
 };
 
 const PatientDetailsPage = () => {
   const [patient, setPatient] = useState(null);
-  const [actualResult, setActualResult] = useState(null); // true for "Yes", false for "No"
+  const [actualResult, setActualResult] = useState(null);
   const [predictedResult, setPredictedResult] = useState("No");
 
   useEffect(() => {
-    const mockPatientData = {
-      fname: "Prat",
-      lname: "Veera",
-      age: 52,
-      meds: ["Metformin", "Insulin", "Pioglitazone"],
-      gender: "Female",
-      race: "Caucasian",
-      admission_type: "Emergency",
-      discharge_disposition: "Discharged to Home",
-      diag_1: "Diabetes",
-      diag_2: "Neoplasms",
-      diag_3: "Respiratory",
-      time_in_hospital: 4,
-      num_lab_procedures: 35,
-      num_procedures: 1,
-      num_medications: 10,
-      number_outpatient: 0,
-      number_emergency: 1,
-      number_inpatient: 1,
-      number_diagnoses: 5,
-      admission_source_id: "Referral",
-      diabetic_medication: "Yes",
-      change_num: 1,
+    const fetchPatient = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/get-patient");
+        if (!response.ok) throw new Error("Failed to fetch patient data");
+        const data = await response.json();
+        setPatient(data);
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
     };
-    setPatient(mockPatientData);
+
+    fetchPatient();
   }, []);
 
   const handleUpdate = async () => {
+    if (!patient) return;
+
     try {
       const response = await fetch("http://localhost:8000/update-actual-result", {
         method: "POST",
@@ -67,8 +57,10 @@ const PatientDetailsPage = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          patient_id: "1234", 
-          actual_result: actualResult ? "Yes" : "No",
+          fname: patient.fname,
+          lname: patient.lname,
+          dob: patient.dob,
+          actual_result: actualResult ? 1 : 0,
         }),
       });
 
@@ -87,7 +79,7 @@ const PatientDetailsPage = () => {
   if (!patient) return <div>Loading...</div>;
 
   return (
-    <div className="flex items-center justify-center py-20">
+    <div className="flex items-center justify-center py-20 bg-gradient-to-br from-blue-100 to-white">
       <div className="w-3/4 bg-white p-10 drop-shadow-xl rounded-3xl">
         <div className="text-2xl font-bold mb-6">Patient Details</div>
         <div className="grid grid-cols-2 gap-4 mb-8">
@@ -130,7 +122,7 @@ const PatientDetailsPage = () => {
         </div>
 
         <button
-          className="border-2 border-teal px-6 py-2 rounded-full font-medium hover:bg-white bg-teal hover:opacity-95 transition"
+          className="border-2 border-teal px-6 py-2 rounded-full text-xs bg-teal hover:bg-white transition sm:text-sm"
           onClick={handleUpdate}
           disabled={actualResult === null}
         >
