@@ -26,6 +26,7 @@ const fieldLabels = {
   diabetic_medication: "Diabetic Medication",
   change_num: "Change Number",
   dob: "Date of Birth",
+  predicted_result: "Predicted Result",
 };
 
 const PatientDetailsPage = () => {
@@ -39,6 +40,14 @@ const PatientDetailsPage = () => {
   useEffect(() => {
     if (passedPatient) {
       setPatient(passedPatient);
+      if (
+        passedPatient.predicted_result === 1 ||
+        passedPatient.predicted_result === "Yes"
+      ) {
+        setPredictedResult("Yes");
+      } else {
+        setPredictedResult("No");
+      }
     }
   }, [passedPatient]);
 
@@ -77,21 +86,26 @@ const PatientDetailsPage = () => {
     <div className="flex items-center justify-center py-20 bg-gradient-to-br from-blue-100 to-white">
       <div className="w-3/4 bg-white p-10 drop-shadow-xl rounded-3xl">
         <div className="text-2xl font-bold mb-6">Patient Details</div>
+
         <div className="grid grid-cols-2 gap-4 mb-8">
-          {Object.entries(patient).map(([key, value]) => (
-            <div key={key} className="flex flex-row">
-              <label className="text-md text-gray-600 font-bold mb-1">
-                {fieldLabels[key] || key}:
-              </label>
-              <div className="text-base text-gray-800 ml-2">
-                {Array.isArray(value) ? value.join(", ") : value}
+          {Object.entries(patient).map(([key, value]) =>
+            key === "predicted_result" ? null : (
+              <div key={key} className="flex flex-row">
+                <label className="text-md text-gray-600 font-bold mb-1">
+                  {fieldLabels[key] || key}:
+                </label>
+                <div className="text-base text-gray-800 ml-2">
+                  {Array.isArray(value) ? value.join(", ") : value}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
 
-        <div className="flex flex-row">
-          <div className="text-md font-semibold text-gray-700 mb-1">Predicted Result:</div>
+        <div className="flex flex-row mb-6">
+          <div className="text-md font-semibold text-gray-700 mb-1">
+            Predicted Result:
+          </div>
           <div
             className={`text-md font-bold ml-2 ${
               predictedResult === "Yes" ? "text-red-600" : "text-green-600"
@@ -104,7 +118,9 @@ const PatientDetailsPage = () => {
         </div>
 
         <div className="mb-6">
-          <div className="text-md font-semibold text-gray-700 mb-2">Mark Actual Result:</div>
+          <div className="text-md font-semibold text-gray-700 mb-2">
+            Mark Actual Result:
+          </div>
           <div className="flex items-center gap-4">
             <label className="font-medium">No</label>
             <Switch
