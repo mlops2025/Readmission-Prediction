@@ -65,7 +65,7 @@ const PredictionForm = () => {
   const transformDataForBackend = () => {
     return {
       ...formData,
-      dob: Date(formData.dob),
+      dob: String(formData.dob),
       time_in_hospital: Number(formData.time_in_hospital),
       num_lab_procedures: Number(formData.num_lab_procedures),
       num_procedures: Number(formData.num_procedures),
