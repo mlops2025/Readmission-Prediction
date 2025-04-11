@@ -45,21 +45,25 @@ default_args = {
 
 # Define function to notify failure or sucess via an email
 def notify_success(context):
+    task_id = context.get('task_instance').task_id
+    dag_id = context.get('dag').dag_id
     success_email = EmailOperator(
-        task_id='success_email',
+        task_id='success_email_' + task_id,
         to='mlopsneu2025@gmail.com',
-        subject='Success Notification from Airflow',
-        html_content='<p>The task succeeded.</p>',
+        subject=f'Success: Task {task_id} in DAG {dag_id}',
+        html_content=f'<p>✅ Task <strong>{task_id}</strong> in DAG <strong>{dag_id}</strong> succeeded.</p>',
         dag=context['dag']
     )
     success_email.execute(context=context)
 
 def notify_failure(context):
+    task_id = context.get('task_instance').task_id
+    dag_id = context.get('dag').dag_id
     failure_email = EmailOperator(
-        task_id='failure_email',
+        task_id='failure_email_' + task_id,
         to='mlopsneu2025@gmail.com',
-        subject='Failure Notification from Airflow',
-        html_content='<p>The task failed.</p>',
+        subject=f'Failure: Task {task_id} in DAG {dag_id}',
+        html_content=f'<p>❌ Task <strong>{task_id}</strong> in DAG <strong>{dag_id}</strong> failed.</p>',
         dag=context['dag']
     )
     failure_email.execute(context=context)
@@ -77,7 +81,7 @@ email_notification_task = EmailOperator(
     task_id='dag_started_email',
     to='mlopsneu2025@gmail.com',
     subject='Data Pipeline Dag Started',
-    html_content='<p> Data Pipeline Dag Completed</p>',
+    html_content='<p> ✅ Data Pipeline Dag Completed</p>',
     dag=dag,
 )
 
@@ -182,19 +186,19 @@ email_notification_task = EmailOperator(
     task_id='dag_completed_email',
     to='mlopsneu2025@gmail.com',
     subject='Dag Completed Successfully',
-    html_content='<p> Data Pipeline Dag Completed</p>',
+    html_content='<p> ✅ Data Pipeline Dag Completed</p>',
     dag=dag,
 )
 
 # Task to trigger the ModelPipeline DAG
-trigger_model_pipeline_task = TriggerDagRunOperator(
-    task_id='trigger_model_pipeline_task',
-    trigger_dag_id='ModelDevelopmentPipeline',
-    trigger_rule=TriggerRule.ALL_DONE,  # Ensure this task runs only if all upstream tasks succeed
-    dag=dag,
-)
+# trigger_model_pipeline_task = TriggerDagRunOperator(
+#     task_id='trigger_model_pipeline_task',
+#     trigger_dag_id='ModelDevelopmentPipeline',
+#     trigger_rule=TriggerRule.ALL_DONE,  # Ensure this task runs only if all upstream tasks succeed
+#     dag=dag,
+# )
 
-ingest_data_task >> unzip_file_task >> remove_duplicates_task >> missing_value_task >> data_mapping_task >> encoding_task >> feature_extract_task  >> schema_validation_task >> data_bias_task >>feature_selection_task  >> feature_scaling_task >> gcp_upload_task >> email_notification_task >> trigger_model_pipeline_task
+ingest_data_task >> unzip_file_task >> remove_duplicates_task >> missing_value_task >> data_mapping_task >> encoding_task >> feature_extract_task  >> schema_validation_task >> data_bias_task >>feature_selection_task  >> feature_scaling_task >> gcp_upload_task >> email_notification_task #>> trigger_model_pipeline_task
 
 if __name__ == "__main__":
     dag.cli()
