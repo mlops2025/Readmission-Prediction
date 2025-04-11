@@ -4,7 +4,7 @@ from typing import List
 class PredictionRequest(BaseModel):
     fname: str
     lname: str
-    age: int
+    dob: str
     meds: List[str]
     gender: str
     race: str
@@ -22,9 +22,12 @@ class PredictionRequest(BaseModel):
     number_inpatient: int
     number_diagnoses: int
     admission_source_id: str
-    diabetic_medication: str
+    diabetic_medication: int
     change_num: int
 
+
 class ActualResultUpdate(BaseModel):
-    patient_id: str
-    actual_result: str  # "Yes" or "No"
+    fname: str
+    lname: str
+    dob: str  # or datetime.date if you're parsing dates
+    actual_result: int  # should be 0 or 1
