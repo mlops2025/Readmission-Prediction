@@ -397,14 +397,14 @@ Bias evaluation examines demographic disparities in age, gender, and race using 
 
 Related file: bias.py
 
-![alt text](image-1.png)
+![alt text](assets/image-1.png)
 
 ### Upload train and test to GCP
 
 Splits the dataset into training and testing sets and uploads them to Google Cloud Storage (GCS). It handles errors gracefully by checking for bucket existence, logging progress, and retrying failed uploads. The processed data is first saved locally before being uploaded to GCS as CSV files.
 
 ### Pipeline Optimization 
-![alt text](image.png)
+![alt text](assets/image.png)
 
 Pictured above: Airflow DAG Execution Gantt Chart for Data Pipeline. It is a popular project management tool used to visualize and track the progress of tasks or activities over time. It provides a graphical representation of a pipeline's schedule, showing when each task is planned to start and finish.
 
@@ -412,11 +412,11 @@ Pictured above: Airflow DAG Execution Gantt Chart for Data Pipeline. It is a pop
 
 Alerts on DAG Start, Complete and if any failure in tasks
 
-![alt text](image-2.png)
+![alt text](assets/image-2.png)
 
-![alt text](image-3.png)
+![alt text](assets/image-3.png)
 
-![alt text](image-4.png)
+![alt text](assets/image-4.png)
 
 ### Future Enhancements
 
