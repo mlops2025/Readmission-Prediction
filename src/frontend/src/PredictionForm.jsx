@@ -48,7 +48,7 @@ const PredictionForm = () => {
     const payload = transformDataForBackend();
 
     try {
-      const response = await fetch("https://term-deposit-backend-<hash>.a.run.app/predict", {
+      const response = await fetch("https://term-deposit-backend-149146997593.us-east1.run.app/predict", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
