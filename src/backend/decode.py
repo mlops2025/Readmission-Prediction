@@ -4,7 +4,7 @@ def decode_one_hot_record(record):
             if record.get(f"{prefix}_{opt.replace(' ', '_')}") == 1:
                 return opt
         return None
-
+ 
     def decode_diag(prefix):
         diag_cats = ["Diabetes", "Genitourinary", "Injury", "Musculoskelatal", "Neoplasms", "Others", "Respiratory"]
         return decode_field(prefix, diag_cats)
