@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - folder_struct
     paths:
       - 'src/frontend/**'
       - 'src/backend/**'
