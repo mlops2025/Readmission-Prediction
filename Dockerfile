@@ -24,8 +24,9 @@ RUN cd frontend && npm install
 # ENV GOOGLE_APPLICATION_CREDENTIALS=/app/backend/service-account.json
 
 # Expose frontend and backend ports
-EXPOSE 3000 8000
+EXPOSE 3000 8000 8080
 
 # Use a shell script to run both frontend and backend
-CMD ["sh", "-c", "cd /app/frontend && npm run dev & cd /app/backend && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"]
+CMD ["sh", "-c", "cd /app/frontend && npm run dev & cd /app/backend && uvicorn main:app --host 0.0.0.0 --port $PORT"]
+
 
