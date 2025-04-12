@@ -212,4 +212,3 @@ def bias_Evaluation():
         raise CustomException(e,sys)
     return 0
 
-bias_Evaluation()
