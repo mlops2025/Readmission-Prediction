@@ -1,3 +1,4 @@
+
 def decode_one_hot_record(record):
     def decode_field(prefix, options):
         for opt in options:
