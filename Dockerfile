@@ -17,10 +17,9 @@ COPY src/frontend ./frontend
 # Install frontend dependencies
 RUN cd frontend && npm install
 
-
 # Expose frontend and backend ports
 EXPOSE 3000 8000
 
 # Use a shell script to run both frontend and backend
-CMD ["sh", "-c", "cd /app/frontend && npm run dev & cd /app/backend && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"]
+CMD ["sh", "-c", "cd /app/frontend && npm run dev & cd /app/backend && uvicorn main:app --host 0.0.0.0 --port 8080 --reload"]
 
