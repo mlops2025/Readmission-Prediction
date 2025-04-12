@@ -133,33 +133,19 @@ const PatientDetailsPage = () => {
         </div>
 
         <div className="mb-6">
-  <div className="text-md font-semibold text-gray-700 mb-2">
-    Mark Actual Result:
-  </div>
-  <div className="flex items-center gap-6">
-    <label className="flex items-center gap-2">
-      <input
-        type="radio"
-        name="actualResult"
-        value="0"
-        checked={actualResult === 0}
-        onChange={() => setActualResult(0)}
-      />
-      <span>No</span>
-    </label>
-    <label className="flex items-center gap-2">
-      <input
-        type="radio"
-        name="actualResult"
-        value="1"
-        checked={actualResult === 1}
-        onChange={() => setActualResult(1)}
-      />
-      <span>Yes</span>
-    </label>
-  </div>
-</div>
-
+          <div className="text-md font-semibold text-gray-700 mb-2">
+            Mark Actual Result:
+          </div>
+          <div className="flex items-center gap-4">
+            <label className="font-medium">No</label>
+            <Switch
+              checked={actualResult === true}
+              onChange={(e) => setActualResult(e.target.checked)}
+              color="primary"
+            />
+            <label className="font-medium">Yes</label>
+          </div>
+        </div>
 
         <button
           className="border-2 border-teal px-6 py-2 rounded-full text-xs bg-teal hover:bg-white transition sm:text-sm"
