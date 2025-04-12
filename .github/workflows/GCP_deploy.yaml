@@ -1,0 +1,58 @@
+name: Build, Push & Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+      - folder_struct
+    paths:
+      - 'src/frontend/**'
+      - 'src/backend/**'
+      - 'Dockerfile'
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us
+  REPOSITORY: term-deposit-docker-repo
+  IMAGE_NAME: term-deposit-app
+  SERVICE_NAME: term-deposit-service
+  IMAGE_URI: us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/term-deposit-docker-repo/term-deposit-app
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate with GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-docker.pkg.dev
+
+      - name: Build Docker image
+        run: docker build -t ${{ env.IMAGE_URI }}:${{ github.sha }} .
+
+      - name: Push Docker image (with git hash tag)
+        run: docker push ${{ env.IMAGE_URI }}:${{ github.sha }}
+
+      - name: Tag and push latest
+        run: |
+          docker tag ${{ env.IMAGE_URI }}:${{ github.sha }} ${{ env.IMAGE_URI }}:latest
+          docker push ${{ env.IMAGE_URI }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image=${{ env.IMAGE_URI }}:${{ github.sha }} \
+            --platform=managed \
+            --region=${{ env.REGION }} \
+            --allow-unauthenticated \
+            --project=${{ env.PROJECT_ID }}
+            --set-env-vars=DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},DB_HOST=${{ secrets.DB_HOST }},DB_NAME=${{ secrets.DB_NAME }}
+

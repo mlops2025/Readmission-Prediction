@@ -1,0 +1,11 @@
+psycopg2
+google-cloud-storage
+fastapi
+uvicorn
+pydantic
+joblib 
+pandas
+typing
+SQLAlchemy
+xgboost
+scikit-learn

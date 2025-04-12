@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TextField, Button, Box } from "@mui/material";
+import { TextField, Box } from "@mui/material";
 
 const SearchPatient = () => {
   const [searchData, setSearchData] = useState({
@@ -22,41 +22,40 @@ const SearchPatient = () => {
     searchData.lname.trim() !== "" &&
     searchData.dob.trim() !== "";
 
-    const handleSearch = async () => {
-      if (!isFormValid) return;
-    
-      setLoading(true);
-      try {
-        const response = await fetch("http://localhost:8000/search-patient", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(searchData),
-        });
-    
-        if (!response.ok) {
-          throw new Error("Patient not found");
-        }
-    
-        const data = await response.json();
-    
-        if (data) {
-          navigate("/patient-details", { state: data });
-        } else {
-          alert("Patient not found");
-        }
-      } catch (error) {
-        console.error("Search error:", error);
-        alert("Patient not found");
-      } finally {
-        setLoading(false);
+  const handleSearch = async () => {
+    if (!isFormValid) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:8000/search-patient", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(searchData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Patient not found");
       }
-    };
-    
+
+      const data = await response.json();
+
+      if (data) {
+        navigate("/patient-details", { state: data });
+      } else {
+        alert("Patient not found");
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      alert("Patient not found");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="flex items-center justify-center h-screen">
+    <div className="flex items-center justify-center h-screen bg-gray-100">
       <div className="w-1/2 bg-white p-8 rounded-3xl drop-shadow-2xl">
         <h2 className="text-2xl font-bold mb-6 text-center">Search Patient</h2>
         <Box className="flex flex-col gap-6">
@@ -90,7 +89,9 @@ const SearchPatient = () => {
             required
           />
           <button
-            className={`border-2 border-teal px-6 py-2 rounded-full font-medium bg-teal hover:bg-white transition ${!isFormValid || loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`border-2 border-teal px-6 py-2 rounded-full font-medium bg-teal text-white hover:bg-white hover:text-teal transition ${
+              !isFormValid || loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             onClick={handleSearch}
             disabled={!isFormValid || loading}
           >

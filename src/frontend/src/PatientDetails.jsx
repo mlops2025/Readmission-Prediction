@@ -40,6 +40,8 @@ const PatientDetailsPage = () => {
   useEffect(() => {
     if (passedPatient) {
       setPatient(passedPatient);
+
+      // Set predicted result
       if (
         passedPatient.predicted_result === 1 ||
         passedPatient.predicted_result === "Yes"
@@ -47,6 +49,19 @@ const PatientDetailsPage = () => {
         setPredictedResult("Yes");
       } else {
         setPredictedResult("No");
+      }
+
+      // Set actual result if it already exists
+      if (
+        passedPatient.actual_result === 1 ||
+        passedPatient.actual_result === "Yes"
+      ) {
+        setActualResult(true);
+      } else if (
+        passedPatient.actual_result === 0 ||
+        passedPatient.actual_result === "No"
+      ) {
+        setActualResult(false);
       }
     }
   }, [passedPatient]);
@@ -89,7 +104,7 @@ const PatientDetailsPage = () => {
 
         <div className="grid grid-cols-2 gap-4 mb-8">
           {Object.entries(patient).map(([key, value]) =>
-            key === "predicted_result" ? null : (
+            key === "predicted_result" || key === "actual_result" ? null : (
               <div key={key} className="flex flex-row">
                 <label className="text-md text-gray-600 font-bold mb-1">
                   {fieldLabels[key] || key}:

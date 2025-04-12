@@ -1,0 +1,34 @@
+name: Test GCP Authentication
+
+on:
+  workflow_dispatch:  # Run manually from GitHub Actions tab
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us  # or your actual GCP region
+
+jobs:
+  test-auth:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Test Cloud Run access
+        run: |
+          echo "Testing authentication by listing Cloud Run services..."
+          gcloud run services list --region=${{ env.REGION }} || echo "❌ Could not access Cloud Run. Check permissions and project ID."
+
+      - name: Confirm auth success
+        run: echo "✅ GCP_SA_KEY authentication was successful!"
