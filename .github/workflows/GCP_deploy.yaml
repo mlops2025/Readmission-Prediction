@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - folder_struct
+      - sujag
     paths:
       - 'src/frontend/**'
       - 'src/backend/**'
@@ -54,3 +55,4 @@ jobs:
             --region=${{ env.REGION }} \
             --allow-unauthenticated \
             --project=${{ env.PROJECT_ID }}
+            --service-account=mlops-cloudrun-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com

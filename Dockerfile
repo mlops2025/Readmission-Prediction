@@ -18,10 +18,10 @@ COPY src/frontend ./frontend
 RUN cd frontend && npm install
 
 # Copy service account credentials (if needed)
-COPY config/key.json ./backend/service-account.json
+# COPY config/key.json ./backend/service-account.json
 
-# Set environment variable for the backend
-ENV GOOGLE_APPLICATION_CREDENTIALS=/app/backend/service-account.json
+# # Set environment variable for the backend
+# ENV GOOGLE_APPLICATION_CREDENTIALS=/app/backend/service-account.json
 
 # Expose frontend and backend ports
 EXPOSE 3000 8000
