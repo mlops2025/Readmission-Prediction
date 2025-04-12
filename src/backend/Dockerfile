@@ -1,3 +1,4 @@
+# Use official Python image
 FROM python:3.10-slim
 
 # Set environment variables
@@ -11,11 +12,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all backend files
+# Copy source code
 COPY . .
 
-# Expose FastAPI port
-EXPOSE 8000
+# Expose Cloud Run default port
+EXPOSE 8080
 
-# Start the FastAPI app
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run FastAPI on port 8080
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
