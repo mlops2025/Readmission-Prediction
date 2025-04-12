@@ -40,8 +40,7 @@ const PatientDetailsPage = () => {
   useEffect(() => {
     if (passedPatient) {
       setPatient(passedPatient);
-
-      // Set predicted result
+  
       if (
         passedPatient.predicted_result === 1 ||
         passedPatient.predicted_result === "Yes"
@@ -50,21 +49,20 @@ const PatientDetailsPage = () => {
       } else {
         setPredictedResult("No");
       }
-
-      // Set actual result if it already exists
+  
       if (
         passedPatient.actual_result === 1 ||
         passedPatient.actual_result === "Yes"
       ) {
-        setActualResult(true);
+        setActualResult(1);
       } else if (
         passedPatient.actual_result === 0 ||
         passedPatient.actual_result === "No"
       ) {
-        setActualResult(false);
+        setActualResult(0);
       }
     }
-  }, [passedPatient]);
+  }, [passedPatient]);  
 
   const handleUpdate = async () => {
     if (!patient) return;
