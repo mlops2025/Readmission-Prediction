@@ -1,13 +1,14 @@
 # db.py
 from sqlalchemy import create_engine, text
 import pandas as pd
+import os
 
 # === Database Connection Setup ===
-DB_NAME = 'mlopsneu2025'
-DB_USER = 'postgres'
-DB_PASSWORD = 'mlops2025'
-DB_HOST = '34.123.77.199'
-DB_PORT = '5432'
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASS')
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT', '5432')
 
 def get_engine():
     return create_engine(
