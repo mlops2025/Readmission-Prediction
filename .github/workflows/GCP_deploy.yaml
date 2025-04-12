@@ -14,10 +14,10 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us
-  REPOSITORY: readmission-docker-repo
-  IMAGE_NAME: readmission-app
-  SERVICE_NAME: readmission-service
-  IMAGE_URI: us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/readmission-docker-repo/readmission-app
+  REPOSITORY: term-deposit-docker-repo
+  IMAGE_NAME: term-deposit-app
+  SERVICE_NAME: term-deposit-service
+  IMAGE_URI: us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/term-deposit-docker-repo/term-deposit-app
 
 jobs:
   build-push-deploy:
@@ -53,5 +53,6 @@ jobs:
             --platform=managed \
             --region=${{ env.REGION }} \
             --allow-unauthenticated \
-            --project=${{ env.PROJECT_ID }} \
+            --project=${{ env.PROJECT_ID }}
             --set-env-vars=DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},DB_HOST=${{ secrets.DB_HOST }},DB_NAME=${{ secrets.DB_NAME }}
+
