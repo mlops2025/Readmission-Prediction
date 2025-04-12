@@ -70,7 +70,7 @@ const PatientDetailsPage = () => {
     if (!patient) return;
 
     try {
-      const response = await fetch("http://localhost:8000/update-actual-result", {
+      const response = await fetch("http://localhost:8080/update-actual-result", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
