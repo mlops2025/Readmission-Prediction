@@ -27,7 +27,7 @@ const SearchPatient = () => {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8080/search-patient", {
+      const response = await fetch("https://term-deposit-backend-<hash>.a.run.app/search-patient", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
