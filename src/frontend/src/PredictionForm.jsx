@@ -48,7 +48,7 @@ const PredictionForm = () => {
     const payload = transformDataForBackend();
 
     try {
-      const response = await fetch("http://localhost:8000/predict", {
+      const response = await fetch("http://localhost:8080/predict", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
