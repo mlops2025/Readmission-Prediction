@@ -22,6 +22,7 @@ var/
 wheels/
 share/python-wheels/
 *.egg-info/
+google-cloud-sdk/
 .installed.cfg
 *.egg
 MANIFEST
