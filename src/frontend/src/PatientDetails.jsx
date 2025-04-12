@@ -70,7 +70,7 @@ const PatientDetailsPage = () => {
     if (!patient) return;
 
     try {
-      const response = await fetch("https://term-deposit-backend-<hash>.a.run.app/update-actual-result", {
+      const response = await fetch("https://term-deposit-backend-149146997593.us-east1.run.app/update-actual-result", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
