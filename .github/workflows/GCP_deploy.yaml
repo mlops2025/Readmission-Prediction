@@ -8,16 +8,18 @@ on:
     paths:
       - 'src/frontend/**'
       - 'src/backend/**'
-      - 'Dockerfile'
+      - 'src/frontend/Dockerfile'
+      - 'src/backend/Dockerfile'
   workflow_dispatch:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us-east1
   REPOSITORY: term-deposit-docker-repo
-  IMAGE_NAME: term-deposit-app
-  SERVICE_NAME: term-deposit-service
-  IMAGE_URI: us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/term-deposit-docker-repo/term-deposit-app
+  BACKEND_IMAGE_NAME: term-deposit-backend
+  FRONTEND_IMAGE_NAME: term-deposit-frontend
+  BACKEND_SERVICE_NAME: term-deposit-backend
+  FRONTEND_SERVICE_NAME: term-deposit-frontend
 
 jobs:
   build-push-deploy:
@@ -35,24 +37,53 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker us-docker.pkg.dev
 
-      - name: Build Docker image
-        run: docker build -t ${{ env.IMAGE_URI }}:${{ github.sha }} .
-
-      - name: Push Docker image (with git hash tag)
-        run: docker push ${{ env.IMAGE_URI }}:${{ github.sha }}
-
-      - name: Tag and push latest
+      ####################
+      # BACKEND BUILD + PUSH + DEPLOY
+      ####################
+      - name: Build Backend Docker Image
         run: |
-          docker tag ${{ env.IMAGE_URI }}:${{ github.sha }} ${{ env.IMAGE_URI }}:latest
-          docker push ${{ env.IMAGE_URI }}:latest
+          docker build -t us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} ./src/backend
 
-      - name: Deploy to Cloud Run
+      - name: Push Backend Docker Image
         run: |
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image=${{ env.IMAGE_URI }}:${{ github.sha }} \
+          docker push us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Tag & Push Backend as Latest
+        run: |
+          docker tag us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+          docker push us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+
+      - name: Deploy Backend to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.BACKEND_SERVICE_NAME }} \
+            --image=us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
+            --platform=managed \
+            --region=${{ env.REGION }} \
+            --allow-unauthenticated \
+            --project=${{ env.PROJECT_ID }} \
+            --set-env-vars=DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},DB_HOST=${{ secrets.DB_HOST }},DB_NAME=${{ secrets.DB_NAME }}
+
+      ####################
+      # FRONTEND BUILD + PUSH + DEPLOY
+      ####################
+      - name: Build Frontend Docker Image
+        run: |
+          docker build -t us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }} ./src/frontend
+
+      - name: Push Frontend Docker Image
+        run: |
+          docker push us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Tag & Push Frontend as Latest
+        run: |
+          docker tag us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }} us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest
+          docker push us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest
+
+      - name: Deploy Frontend to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.FRONTEND_SERVICE_NAME }} \
+            --image=us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }} \
             --platform=managed \
             --region=${{ env.REGION }} \
             --allow-unauthenticated \
             --project=${{ env.PROJECT_ID }}
-            --set-env-vars=DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},DB_HOST=${{ secrets.DB_HOST }},DB_NAME=${{ secrets.DB_NAME }}
-
