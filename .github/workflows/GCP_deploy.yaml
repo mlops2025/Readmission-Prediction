@@ -14,7 +14,7 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: us
+  REGION: us-east1
   REPOSITORY: term-deposit-docker-repo
   IMAGE_NAME: term-deposit-app
   SERVICE_NAME: term-deposit-service
