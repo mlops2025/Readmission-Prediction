@@ -6,3 +6,6 @@ pydantic
 joblib 
 pandas
 typing
+SQLAlchemy
+xgboost
+scikit-learn
