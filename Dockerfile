@@ -17,3 +17,5 @@ EXPOSE 8080
 ENV PORT=8080
 
 CMD ["sh", "-c", "serve -s frontend/dist -l 3000 & uvicorn backend.main:app --host 0.0.0.0 --port $PORT"]
+
+
