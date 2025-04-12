@@ -4,58 +4,81 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
+import json
 import sys
+from xgboost import XGBClassifier
 from logger import logging
-from exceptions import CustomException
+from google.cloud import storage
+from sqlalchemy import create_engine
+from io import BytesIO
+from src.exceptions import CustomException
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from fairlearn.postprocessing import ThresholdOptimizer
 from fairlearn.metrics import demographic_parity_ratio, equalized_odds_ratio
+from dotenv import load_dotenv
+import os
 
 
 
 def bias_Evaluation():
     try:
+ 
+        KEY_PATH = "config/key.json" 
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = KEY_PATH
 
-        ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
-        TRAIN_FILE = os.path.join(ROOT_DIR, 'data', 'processed', 'train_data.csv')
-        TEST_FILE = os.path.join(ROOT_DIR, 'data', 'processed', 'test_data.csv')
-        MODEL_DIR = os.path.join(ROOT_DIR,'airflow','final_model')
+        load_dotenv()
+        DB_NAME = os.getenv('DB_NAME')
+        DB_USER = os.getenv('DB_USER')
+        DB_PASSWORD = os.getenv('DB_PASSWORD')
+        DB_HOST = os.getenv('DB_HOST')
+        DB_PORT = os.getenv('DB_PORT')
 
+        engine = create_engine(
+            f'postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+        )
 
-        try:
-            model_files = [f for f in os.listdir(MODEL_DIR) if f.endswith('.pkl')]
-            
-            model_files.sort(reverse=False)  # Sort to get the latest one
-            latest_model_path = os.path.join(MODEL_DIR, model_files[0])
-            logging.info(f'Latest model path: {latest_model_path}')
+        #import model.pkl from GCP
 
-            with open(latest_model_path, 'rb') as f:
-                model = pickle.load(f)
+        def load_model_from_gcs(bucket_name, blob_path):
+                client = storage.Client()
+                bucket = client.bucket(bucket_name)
+                blob = bucket.blob(blob_path)
+                model_bytes = blob.download_as_bytes()
+                model = pickle.loads(model_bytes)
 
-        except Exception as e:
-                logging.info('__.__Error occoured__.__')
-                raise CustomException(e,sys)
+                return model
 
+        bucket_name = 'readmission_prediction'
+        blob_path = 'models/best_xgboost_model/model.pkl'
+        model=load_model_from_gcs(bucket_name,blob_path)
 
-        train_df = pd.read_csv(TRAIN_FILE)
-        test_df = pd.read_csv(TEST_FILE)
+        ##Connecting to PostGres DB to fetch Patients Table
 
-        train_df['race'] = np.where(train_df['race_Caucasian'] == 1, 1, 
-                            np.where(train_df['race_Other'] == 1, 0, np.nan))
+        df = pd.read_sql(sql='SELECT * FROM public.patients_data',con=engine)
+        logging.info(f"Data loaded successfully, number of records: {len(df)}")
 
-        test_df['race'] = np.where(test_df['race_Caucasian'] == 1, 1, 
-                                np.where(test_df['race_Other'] == 1, 0, np.nan))
+        df=df.drop(columns=['predict','f_name','l_name','dob'])
+        df=df.dropna()
+
+        train_df, test_df = train_test_split(df, test_size=0.1, random_state=42)
+        logging.info(f"Train data shape: {train_df.shape}, Test data shape: {test_df.shape}")
+
+        train_df['race'] = np.where(train_df['race_caucasian'] == 1, 1, 
+                            np.where(train_df['race_other'] == 1, 0, np.nan))
+
+        test_df['race'] = np.where(test_df['race_caucasian'] == 1, 1, 
+                                np.where(test_df['race_other'] == 1, 0, np.nan))
 
         train_df = train_df.dropna(subset=['race']) ## dropping africanamerican race
         test_df = test_df.dropna(subset=['race']) ## dropping africanamerican race
 
-
         target_labels_train = train_df['readmitted']
-        sensitive_features_train = train_df[['gender_Male','race']]
+        sensitive_features_train = train_df[['gender_male','race']]
 
         target_labels_test = test_df['readmitted']
-        sensitive_features_test = test_df[['gender_Male','race']]
+        sensitive_features_test = test_df[['gender_male','race']]
 
         # Split data into features (X) and labels (y)
         X_train = train_df.drop(columns=['readmitted'])
@@ -64,11 +87,15 @@ def bias_Evaluation():
         y_test = target_labels_test
         A_train = sensitive_features_train
         A_test = sensitive_features_test
+        
+        # added to handle model and test train df features mismatch
+        expected_features = model.get_booster().feature_names   
+        X_test = test_df[expected_features] 
+        X_train = train_df[expected_features]
 
-        # Predict
-        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)                                    
+        #model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
-
 
         def disparate_impact_ratio(y_true, y_pred, sensitive_feature):
             try:
@@ -86,9 +113,9 @@ def bias_Evaluation():
                 raise CustomException(e,sys)
             return rate_1 / rate_0
 
-        dir_gender = disparate_impact_ratio(y_test, y_pred, test_df['gender_Male'])
+        dir_gender = disparate_impact_ratio(y_test, y_pred, test_df['gender_male'])
         dir_race = disparate_impact_ratio(y_test, y_pred, test_df['race'])
-        logging.info(f'Value of disparate_impact_gende: {round(dir_gender, 2)}') 
+        logging.info(f'Value of disparate_impact_gender: {round(dir_gender, 2)}') 
         logging.info(f'Value of disparate_impact_race: {round(dir_race, 2)}')  
 
         #0.89 - Gender Slight Imbalance 
@@ -98,7 +125,6 @@ def bias_Evaluation():
         m_eqo = equalized_odds_ratio(y_test, y_pred, sensitive_features=A_test)
         logging.info(f'Value of demographic parity ratio: {round(m_dpr, 2)}')  # e.g., 0.49
         logging.info(f'Value of equal odds ratio: {round(m_eqo, 2)}')  # e.g., 0.39
-
         #Because of Higher distribution of Caucasian Race we got 0.49 and .39
         
 
@@ -118,7 +144,6 @@ def bias_Evaluation():
         m_eqo_fair = equalized_odds_ratio(y_test, y_pred_fair, sensitive_features=A_test)
         logging.info(f'Value of demographic parity ratio: {round(m_dpr_fair, 2)}')
         logging.info(f'Value of equal odds ratio: {round(m_eqo_fair, 2)}')
-
 
         def evaluate_slices(X_test, y_test, y_pred, feature_name):
             try:
@@ -143,8 +168,9 @@ def bias_Evaluation():
                 raise CustomException(e,sys)
             return pd.DataFrame(results)
         
-        gender_results = evaluate_slices(X_test, y_test, y_pred, 'gender_Male')
-        race_results = evaluate_slices(X_test, y_test, y_pred, 'race')
+        gender_results = evaluate_slices(test_df, y_test, y_pred, 'gender_male')
+        race_results = evaluate_slices(test_df, y_test, y_pred, 'race')
+        
 
         logging.info(f'gender_results: {round(gender_results, 2)}')  # e.g., 1.0
         logging.info(f'race_results: {round(race_results, 2)}')  # e.g., 1.0
@@ -186,3 +212,4 @@ def bias_Evaluation():
         raise CustomException(e,sys)
     return 0
 
+bias_Evaluation()
