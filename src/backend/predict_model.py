@@ -38,9 +38,21 @@ def transform_input(data: PredictionRequest):
     features["number_inpatient"] = data.number_inpatient
     features["number_diagnoses"] = data.number_diagnoses
     features["patient_id"]=0
-    features["health_index"] = 0.5
-    features["severity_of_disease"] = 0.5
     features["number_of_changes"] = data.change_num
+    # Health Index = number_emergency + number_inpatient + number_outpatient
+    features["health_index"] = (
+    features["number_emergency"] +
+    features["number_inpatient"] +
+    features["number_outpatient"])
+
+    # Severity of Disease = time_in_hospital + num_procedures + num_medications + num_lab_procedures + number_diagnoses
+    features["severity_of_disease"] = (
+    features["time_in_hospital"] +
+    features["num_procedures"] +
+    features["num_medications"] +
+    features["num_lab_procedures"] +
+    features["number_diagnoses"])
+
 
     # --- 3. Medications ---
     all_meds = [
