@@ -138,6 +138,7 @@ def make_prediction(data: PredictionRequest):
     prediction = model.predict(df)[0]
     df = df.drop(columns=['patient_id'])
     record = df.to_dict(orient="records")[0]
+    print(f'[INFO] Prediction made:{float(prediction)}')
     record["predict"] = float(prediction)
     record["f_name"] = data.fname
     record["l_name"] = data.lname
