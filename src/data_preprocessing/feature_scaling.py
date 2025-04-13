@@ -2,42 +2,55 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import RobustScaler
 import os
+import joblib
 from logger import logging
 from exceptions import CustomException
 import sys
 
+PROJECT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
+models_dir=os.path.join(PROJECT_DIR, "airflow", "final_model")
 
-def scaling(df):
+def scaling(df, model_output_dir="models/best_final_model"):
     try:
         logging.info("Starting feature scaling process...")
 
-        # Separate target variable (readmitted)
+        # Ensure target variable exists
         if 'readmitted' not in df.columns:
             raise CustomException("Target variable 'readmitted' not found in DataFrame.", sys)
 
-        df_target = df['readmitted'].map({'Yes': 1, 'No': 0})  # Label Encoding
-        df = df.drop(columns=['readmitted'])  # Remove target from feature set
+        # Extract target
+        df_target = df['readmitted'].map({'Yes': 1, 'No': 0})  # Label encoding
+        df = df.drop(columns=['readmitted'])
 
-        # Separate numerical and categorical features
+        # Separate numeric and categorical
         df_num = df.select_dtypes(include=['number'])
         df_cat = df.select_dtypes(include=['object'])
 
-        # Apply scaling to numerical features
+        # Fit scaler
         scaler = RobustScaler()
-        scaled_features = scaler.fit_transform(df_num)
-        df_num_scaled = pd.DataFrame(scaled_features, columns=df_num.columns)
+        scaled_array = scaler.fit_transform(df_num)
+        df_num_scaled = pd.DataFrame(scaled_array, columns=df_num.columns, index=df.index)
 
-        # Handle categorical features only if they exist
+        # Handle categorical
         if not df_cat.empty:
             df_cat_dummy = pd.get_dummies(df_cat, drop_first=True).astype(int)
-            df_cat_dummy.index = df_num_scaled.index
+            df_cat_dummy.index = df.index
             df_scaled = pd.concat([df_num_scaled, df_cat_dummy], axis=1)
         else:
             logging.warning("No categorical features found. Skipping one-hot encoding.")
-            df_scaled = df_num_scaled  # Only numerical features remain
+            df_scaled = df_num_scaled
 
-        # Add target variable back to the processed DataFrame
-        df_scaled['readmitted'] = df_target.values
+        # Add back target
+        df_scaled['readmitted'] = df_target
+
+        # Ensure output path exists
+        os.makedirs(model_output_dir, exist_ok=True)
+
+        # Save scaler to disk
+        scaler_path = os.path.join(models_dir, f"scalar_weight.pkl")
+        
+        joblib.dump(scaler, scaler_path)
+        logging.info(f"Scaler saved at {scaler_path}")
 
         logging.info("Feature scaling completed successfully.")
         return df_scaled

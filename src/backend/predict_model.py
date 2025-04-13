@@ -5,6 +5,7 @@ from db import insert_into_patients_data
 from datetime import datetime
 
 model = None
+scaler = None
 
 def load_model(path: str):
     global model
@@ -12,15 +13,19 @@ def load_model(path: str):
     model = joblib.load(path)
     print("[INFO] Model loaded successfully.")
 
+def load_scaler(path: str):
+    global scaler
+    print(f"[INFO] Loading scaler from {path}")
+    scaler = joblib.load(path)
+    print("[INFO] Scaler loaded successfully.")
+
 def calculate_age(dob_str: str) -> int:
     dob = datetime.strptime(dob_str, "%Y-%m-%d")
     today = datetime.today()
     return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
 
 def normalize_diabetes_med(val):
-    if isinstance(val, int):
-        return "Yes" if val == 1 else "No"
-    return val
+    return "Yes" if str(val).lower() in ["1", "yes"] else "No"
 
 def transform_input(data: PredictionRequest):
     features = {}
@@ -37,22 +42,20 @@ def transform_input(data: PredictionRequest):
     features["number_emergency"] = data.number_emergency
     features["number_inpatient"] = data.number_inpatient
     features["number_diagnoses"] = data.number_diagnoses
-    features["patient_id"]=0
+    features["patient_id"] = 0
     features["number_of_changes"] = data.change_num
-    # Health Index = number_emergency + number_inpatient + number_outpatient
     features["health_index"] = (
-    features["number_emergency"] +
-    features["number_inpatient"] +
-    features["number_outpatient"])
-
-    # Severity of Disease = time_in_hospital + num_procedures + num_medications + num_lab_procedures + number_diagnoses
+        features["number_emergency"] +
+        features["number_inpatient"] +
+        features["number_outpatient"]
+    )
     features["severity_of_disease"] = (
-    features["time_in_hospital"] +
-    features["num_procedures"] +
-    features["num_medications"] +
-    features["num_lab_procedures"] +
-    features["number_diagnoses"])
-
+        features["time_in_hospital"] +
+        features["num_procedures"] +
+        features["num_medications"] +
+        features["num_lab_procedures"] +
+        features["number_diagnoses"]
+    )
 
     # --- 3. Medications ---
     all_meds = [
@@ -63,7 +66,7 @@ def transform_input(data: PredictionRequest):
     for med in all_meds:
         features[med] = 1 if med in meds_set else 0
 
-    # --- 4. One-hot encodings (lowercase keys only) ---
+    # --- 4. One-hot encodings ---
     features["race_caucasian"] = 1 if data.race == "Caucasian" else 0
     features["race_other"] = 1 if data.race == "Other" else 0
     features["gender_male"] = 1 if data.gender == "Male" else 0
@@ -81,19 +84,19 @@ def transform_input(data: PredictionRequest):
     features["admission_source_id_referral"] = 1 if data.admission_source_id == "Referral" else 0
     features["admission_source_id_others"] = 1 if data.admission_source_id == "Others" else 0
 
-    # --- 5. Diagnoses (normalized to lowercase snake_case) ---
+    # --- 5. Diagnoses ---
     diag_cats = ["diabetes", "genitourinary", "injury", "musculoskelatal", "neoplasms", "others", "respiratory"]
     for i in ["diag_1", "diag_2", "diag_3"]:
-        value = getattr(data, i)
+        value = getattr(data, i, "").lower()
         for cat in diag_cats:
-            features[f"{i}_{cat}"] = 1 if value.lower() == cat else 0
+            features[f"{i}_{cat}"] = 1 if value == cat else 0
 
-    # --- 6. Special binary fields ---
+    # --- 6. Special fields ---
     features["change_no"] = 1 if data.change_num == 0 else 0
     diabetic_med_str = normalize_diabetes_med(data.diabetic_medication)
     features["diabetesmed_yes"] = 1 if diabetic_med_str.lower() == "yes" else 0
 
-    # --- 7. Final column alignment (all lowercase, snake_case) ---
+    # --- 7. Final structure ---
     final_columns = [
         "patient_id", "age", "time_in_hospital", "num_lab_procedures", "num_procedures", "num_medications",
         "number_outpatient", "number_emergency", "number_inpatient", "number_diagnoses",
@@ -105,13 +108,10 @@ def transform_input(data: PredictionRequest):
         "discharge_disposition_id_discharged_to_home", "discharge_disposition_id_other",
         "discharge_disposition_id_unknown", "admission_source_id_others",
         "admission_source_id_referral",
-        # diag_1
         "diag_1_diabetes", "diag_1_genitourinary", "diag_1_injury", "diag_1_musculoskelatal",
         "diag_1_neoplasms", "diag_1_others", "diag_1_respiratory",
-        # diag_2
         "diag_2_diabetes", "diag_2_genitourinary", "diag_2_injury", "diag_2_musculoskelatal",
         "diag_2_neoplasms", "diag_2_others", "diag_2_respiratory",
-        # diag_3
         "diag_3_diabetes", "diag_3_genitourinary", "diag_3_injury", "diag_3_musculoskelatal",
         "diag_3_neoplasms", "diag_3_others", "diag_3_respiratory",
         "change_no", "diabetesmed_yes"
@@ -121,13 +121,26 @@ def transform_input(data: PredictionRequest):
         if col not in features:
             features[col] = 0
 
-    return pd.DataFrame([features])[final_columns]
+    df = pd.DataFrame([features])[final_columns]
+
+    # ✅ Apply RobustScaler to numeric features
+    numeric_columns = [
+        "age", "time_in_hospital", "num_lab_procedures", "num_procedures", 
+        "num_medications", "number_outpatient", "number_emergency", 
+        "number_inpatient", "number_diagnoses", "health_index", 
+        "severity_of_disease", "number_of_changes"
+    ]
+
+    global scaler
+    if scaler:
+        df[numeric_columns] = scaler.transform(df[numeric_columns])
+    else:
+        print("[WARNING] Scaler not loaded. Skipping input scaling!")
+
+    return df
 
 def normalize_keys(data: dict) -> dict:
-    return {
-        k.replace(" ", "_").replace("-", "_").lower(): v
-        for k, v in data.items()
-    }
+    return {k.replace(" ", "_").replace("-", "_").lower(): v for k, v in data.items()}
 
 def make_prediction(data: PredictionRequest):
     global model
@@ -136,16 +149,15 @@ def make_prediction(data: PredictionRequest):
 
     df = transform_input(data)
     prediction = model.predict(df)[0]
-    df = df.drop(columns=['patient_id'])
+
+    df = df.drop(columns=["patient_id"])
     record = df.to_dict(orient="records")[0]
-    print(f'[INFO] Prediction made:{float(prediction)}')
     record["predict"] = float(prediction)
     record["f_name"] = data.fname
     record["l_name"] = data.lname
     record["dob"] = data.dob
-    record["age"] = calculate_age(data.dob)  # Add age explicitly to DB
+    record["age"] = calculate_age(data.dob)
 
-    normalized_record = normalize_keys(record)
-    insert_into_patients_data(normalized_record)
-
+    insert_into_patients_data(normalize_keys(record))
+    print(f"[INFO] Prediction made: {prediction}")
     return int(prediction)
