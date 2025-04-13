@@ -123,7 +123,7 @@ def transform_input(data: PredictionRequest):
 
     df = pd.DataFrame([features])[final_columns]
 
-    # ✅ Apply RobustScaler to numeric features
+    # Apply RobustScaler to numeric features
     numeric_columns = [
         "age", "time_in_hospital", "num_lab_procedures", "num_procedures", 
         "num_medications", "number_outpatient", "number_emergency", 
@@ -134,6 +134,10 @@ def transform_input(data: PredictionRequest):
     global scaler
     if scaler:
         df[numeric_columns] = scaler.transform(df[numeric_columns])
+        missing_cols = set(scaler.feature_names_in_) - set(df.columns)
+        if missing_cols:
+            raise ValueError(f"Missing expected features: {missing_cols}")
+        df[numeric_columns] = scaler.transform(df[scaler.feature_names_in_])
     else:
         print("[WARNING] Scaler not loaded. Skipping input scaling!")
 
