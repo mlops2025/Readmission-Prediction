@@ -9,13 +9,6 @@ scaler = shared_scaler
 # Path fallback
 SCALER_PATH = "models/scalar_weight.pkl"
 
-NUMERIC_COLUMNS = [
-    "age", "time_in_hospital", "num_lab_procedures", "num_procedures",
-    "num_medications", "number_outpatient", "number_emergency",
-    "number_inpatient", "number_diagnoses", "health_index",
-    "severity_of_disease", "number_of_changes"
-]
-
 def get_category_from_prefix(record, prefix):
     for key, value in record.items():
         if key.startswith(prefix) and value == 1.0:
@@ -36,34 +29,30 @@ def decode_one_hot_record(record):
     global scaler
     print("[INFO] Starting decoding of patient record...")
 
-    # Step 1: Extract numeric fields
-    try:
-        numeric_scaled = [[record.get(col, 0) for col in NUMERIC_COLUMNS]]
-        print("[DEBUG] Scaled numeric input:", numeric_scaled)
-    except Exception as e:
-        print(f"[ERROR] Failed to extract numeric fields: {e}")
-        traceback.print_exc()
-        return {}
-
-    # Step 2: Try to inverse scale
+    # Step 1: Ensure scaler is loaded
     if scaler is None:
+        print("[WARNING] Scaler not available from predict_model. Trying fallback...")
         load_scaler_fallback()
 
-    if scaler:
-        try:
-            print("[INFO] Scaler is available. Inverse transforming...")
-            print("[DEBUG] Scaler expects columns:", list(scaler.feature_names_in_))
-            numeric_original = scaler.inverse_transform(numeric_scaled)[0]
-            print("[DEBUG] Inverse transformed values:", numeric_original)
-        except Exception as e:
-            print(f"[ERROR] Inverse transform failed: {e}")
-            traceback.print_exc()
-            numeric_original = numeric_scaled[0]
-    else:
-        print("[WARNING] Scaler not loaded. Using scaled values.")
-        numeric_original = numeric_scaled[0]
+    if scaler is None:
+        print("[ERROR] Scaler still not available. Aborting decode.")
+        return {}
 
-    # Step 3: Decode record
+    try:
+        expected_columns = list(scaler.feature_names_in_)
+        print("[DEBUG] Scaler expects columns:", expected_columns)
+
+        numeric_scaled = [[record.get(col, 0) for col in expected_columns]]
+        print("[DEBUG] Scaled numeric input:", numeric_scaled)
+
+        numeric_original = scaler.inverse_transform(numeric_scaled)[0]
+        print("[DEBUG] Inverse transformed values:", numeric_original)
+    except Exception as e:
+        print(f"[ERROR] Failed to inverse-transform numeric fields: {e}")
+        traceback.print_exc()
+        numeric_original = [record.get(col, 0) for col in expected_columns]
+
+    # Step 2: Decode record
     decoded = {
         "fname": record.get("f_name", ""),
         "lname": record.get("l_name", ""),
@@ -84,9 +73,9 @@ def decode_one_hot_record(record):
         ] if record.get(med, 0) == 1.0],
     }
 
-    # Step 4: Add numeric values
+    # Step 3: Add unscaled numeric values
     decoded.update({
-        col: round(val, 2) for col, val in zip(NUMERIC_COLUMNS, numeric_original)
+        col: round(val, 2) for col, val in zip(expected_columns, numeric_original)
     })
 
     print("[INFO] Decoding completed successfully.")
