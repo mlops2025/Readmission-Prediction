@@ -22,9 +22,14 @@ def scaling(df, model_output_dir="models/best_final_model"):
         df_target = df['readmitted'].map({'Yes': 1, 'No': 0})
         df = df.drop(columns=['readmitted'])
 
+        logging.info(f"[DEBUG] Columns BEFORE SCALING: {list(df.columns)}")
+
         # Separate numeric and categorical
         df_num = df.select_dtypes(include=['number'])
         df_cat = df.select_dtypes(include=['object'])
+
+        logging.info(f"[DEBUG] Numeric columns for scaling: {list(df_num.columns)}")
+        logging.info(f"[DEBUG] Categorical columns: {list(df_cat.columns)}")
 
         # Apply scaling
         scaler = RobustScaler()
@@ -37,10 +42,14 @@ def scaling(df, model_output_dir="models/best_final_model"):
         # One-hot encode categorical if present
         if not df_cat.empty:
             df_cat_dummy = pd.get_dummies(df_cat, drop_first=True).astype(int)
+            df_cat_dummy.index = df.index
             df_scaled = pd.concat([df_num_scaled, df_cat_dummy], axis=1)
         else:
             logging.warning("No categorical features found. Skipping one-hot encoding.")
             df_scaled = df_num_scaled
+
+        logging.info(f"[DEBUG] Columns AFTER encoding and scaling: {list(df_scaled.columns)}")
+        logging.info(f"[DEBUG] Total number of columns: {df_scaled.shape[1]}")
 
         # Add back target
         df_scaled["readmitted"] = df_target

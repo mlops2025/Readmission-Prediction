@@ -131,6 +131,10 @@ def transform_input(data: PredictionRequest):
         "severity_of_disease", "number_of_changes"
     ]
 
+    print("[DEBUG] Columns passed to scaler:", list(df[scaler.feature_names_in_].columns))
+    print("[DEBUG] Scaler expects:", list(scaler.feature_names_in_))
+    print("[DEBUG] Shape of transformed data:", scaler.transform(df[scaler.feature_names_in_]).shape)
+
     global scaler
     if scaler:
         missing_cols = set(scaler.feature_names_in_) - set(df.columns)
