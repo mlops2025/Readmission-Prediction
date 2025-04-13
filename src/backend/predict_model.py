@@ -133,7 +133,6 @@ def transform_input(data: PredictionRequest):
 
     global scaler
     if scaler:
-        df[numeric_columns] = scaler.transform(df[numeric_columns])
         missing_cols = set(scaler.feature_names_in_) - set(df.columns)
         if missing_cols:
             raise ValueError(f"Missing expected features: {missing_cols}")
