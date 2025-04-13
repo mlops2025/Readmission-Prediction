@@ -28,6 +28,7 @@ def normalize_diabetes_med(val):
     return "Yes" if str(val).lower() in ["1", "yes"] else "No"
 
 def transform_input(data: PredictionRequest):
+    global scaler
     features = {}
 
     # --- 1. Compute age from DOB ---
@@ -135,7 +136,6 @@ def transform_input(data: PredictionRequest):
     print("[DEBUG] Scaler expects:", list(scaler.feature_names_in_))
     print("[DEBUG] Shape of transformed data:", scaler.transform(df[scaler.feature_names_in_]).shape)
 
-    global scaler
     if scaler:
         missing_cols = set(scaler.feature_names_in_) - set(df.columns)
         if missing_cols:
