@@ -146,7 +146,8 @@ services:
 
   airflow-webserver:
     <<: *airflow-common
-    command: webserver
+    command: >
+      bash -c "mkdir -p /tmp/airflow && exec /usr/bin/dumb-init -- airflow webserver --pid /tmp/airflow/airflow-webserver.pid"
     ports:
       - "8080:8080"
     healthcheck:
@@ -156,12 +157,11 @@ services:
       retries: 5
       start_period: 30s
     restart: always
-    entrypoint: >
-      bash -c "chown -R airflow: /opt/airflow && exec /usr/bin/dumb-init -- airflow webserver"
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+
 
   airflow-scheduler:
     <<: *airflow-common
