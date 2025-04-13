@@ -8,6 +8,7 @@ from predict_model import load_model, make_prediction
 from db import get_patient_by_identity, update_actual_result_in_db
 from decode import decode_one_hot_record
 
+
 from datetime import datetime
 
 app = FastAPI()
