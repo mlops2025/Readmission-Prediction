@@ -61,19 +61,29 @@ jobs:
       - name: Create directories for Airflow
         run: |
           mkdir -p ./dags ./logs ./plugins
+
+      - name: Set _PIP_ADDITIONAL_REQUIREMENTS from requirements.txt
+        id: set_pip_reqs
+        run: |
+          echo "_PIP_ADDITIONAL_REQUIREMENTS=$(cat requirements.txt | tr '\n' ' ')" >> $GITHUB_ENV
+
  
       - name: Initialize Airflow Database
         run: |
           docker compose up airflow-init
+        env:
+          _PIP_ADDITIONAL_REQUIREMENTS: ${{ env._PIP_ADDITIONAL_REQUIREMENTS }}
  
       - name: Start Airflow services
         run: |
           docker compose up -d
+        env:
+          _PIP_ADDITIONAL_REQUIREMENTS: ${{ env._PIP_ADDITIONAL_REQUIREMENTS }}
 
       - name: Wait for Airflow to initialize
         run: |
           echo "Waiting for 180s to allow all Airflow services to come up..."
-          sleep 180
+          sleep 300
 
       - name: Check Airflow services status
         run: docker compose ps
