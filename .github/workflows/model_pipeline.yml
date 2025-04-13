@@ -87,9 +87,17 @@ jobs:
             RUN_ID="manual_$(date +%Y%m%dT%H%M%S)"
             docker compose exec airflow-webserver airflow dags trigger "$DAG_ID" --run-id "$RUN_ID"
 
-            echo "Waiting for DAG to complete..."
+            echo "Waiting for DAG run to complete (RUN_ID: $RUN_ID)..."
+
             while true; do
-              STATUS=$(docker compose exec airflow-webserver airflow dags state "$DAG_ID" "$RUN_ID" | tail -n 1 | tr -d '\r')
+              RUN_INFO=$(docker compose exec airflow-webserver airflow dags list-runs -d "$DAG_ID" -o json | grep "$RUN_ID")
+              if [[ -z "$RUN_INFO" ]]; then
+                echo "DAG run not found yet. Retrying in 30s..."
+                sleep 30
+                continue
+              fi
+
+              STATUS=$(echo "$RUN_INFO" | grep -o '"state": *"[^"]*"' | awk -F'"' '{print $4}')
               echo "Current DAG status: $STATUS"
 
               if [[ "$STATUS" == "success" ]]; then
@@ -108,6 +116,7 @@ jobs:
             docker compose ps
             exit 1
           fi
+
 
  
 ### Model Upload and Deployment
