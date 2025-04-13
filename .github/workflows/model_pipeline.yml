@@ -81,21 +81,26 @@ jobs:
       - name: Trigger DAG and wait for completion
         run: |
           if docker compose ps | grep -q "airflow-webserver.*Up"; then
-            echo "Triggering DAG..."
-            docker compose exec airflow-webserver airflow dags trigger DataPipeline
-           
+            echo "Airflow webserver is up. Triggering DAG..."
+
+            DAG_ID="DataPipeline"
+            RUN_ID="manual_$(date +%Y%m%dT%H%M%S)"
+            docker compose exec airflow-webserver airflow dags trigger "$DAG_ID" --run-id "$RUN_ID"
+
             echo "Waiting for DAG to complete..."
             while true; do
-              STATUS=$(docker compose exec airflow-webserver airflow dags state DataPipeline $(date +%Y-%m-%d))
+              STATUS=$(docker compose exec airflow-webserver airflow dags state "$DAG_ID" "$RUN_ID" | tail -n 1 | tr -d '\r')
               echo "Current DAG status: $STATUS"
-              if [ "$STATUS" = "success" ]; then
-                echo "DAG completed successfully"
+
+              if [[ "$STATUS" == "success" ]]; then
+                echo "DAG completed successfully."
                 break
-              elif [ "$STATUS" = "failed" ]; then
-                echo "DAG failed"
+              elif [[ "$STATUS" == "failed" ]]; then
+                echo "DAG failed."
                 exit 1
               fi
-              echo "DAG still running, waiting..."
+
+              echo "DAG is still running. Checking again in 60 seconds..."
               sleep 60
             done
           else
@@ -103,6 +108,7 @@ jobs:
             docker compose ps
             exit 1
           fi
+
  
 ### Model Upload and Deployment
       # - name: Check for model file
