@@ -69,19 +69,42 @@ jobs:
       - name: Start Airflow services
         run: |
           docker compose up -d
- 
+
       - name: Wait for Airflow to initialize
         run: |
-          sleep 180  # Wait for 3 minutes
- 
+          echo "Waiting for 180s to allow all Airflow services to come up..."
+          sleep 180
+
       - name: Check Airflow services status
+        run: docker compose ps
+
+      - name: Check Airflow Webserver Health
         run: |
-          docker compose ps
- 
+          echo "Checking if Airflow Webserver is healthy..."
+          docker compose exec airflow-webserver curl -f http://localhost:8080/health || {
+            echo "❌ Webserver health check failed!";
+            docker compose logs airflow-webserver;
+            exit 1;
+          }
+
+      - name: Check Airflow Worker Health
+        run: |
+          echo "Checking if Airflow Worker can respond to ping..."
+          docker compose exec airflow-worker celery -A airflow.executors.celery_executor.app inspect ping || {
+            echo "❌ Celery worker did not respond to ping!";
+            docker compose logs airflow-worker;
+            exit 1;
+          }
+
+      - name: Tail Airflow Scheduler logs (initial check)
+        run: |
+          echo "---- airflow-scheduler logs (last 50 lines) ----"
+          docker compose logs --tail=50 airflow-scheduler || true
+
       - name: Trigger DAG and wait for completion
         run: |
           if docker compose ps | grep -q "airflow-webserver.*Up"; then
-            echo "Airflow webserver is up. Triggering DAG..."
+            echo "✅ Airflow webserver is up. Triggering DAG..."
 
             DAG_ID="DataPipeline"
             RUN_ID="manual_$(date +%Y%m%dT%H%M%S)"
@@ -89,34 +112,37 @@ jobs:
 
             echo "Waiting for DAG run to complete (RUN_ID: $RUN_ID)..."
 
-            while true; do
+            for i in {1..15}; do
+              echo "⌛ [Attempt $i] Checking DAG run status..."
               RUN_INFO=$(docker compose exec airflow-webserver airflow dags list-runs -d "$DAG_ID" -o json | grep "$RUN_ID")
+              
               if [[ -z "$RUN_INFO" ]]; then
-                echo "DAG run not found yet. Retrying in 30s..."
+                echo "🔄 DAG run not found yet. Retrying in 30s..."
                 sleep 30
                 continue
               fi
 
               STATUS=$(echo "$RUN_INFO" | grep -o '"state": *"[^"]*"' | awk -F'"' '{print $4}')
-              echo "Current DAG status: $STATUS"
+              echo "📌 Current DAG status: $STATUS"
 
               if [[ "$STATUS" == "success" ]]; then
-                echo "DAG completed successfully."
+                echo "✅ DAG completed successfully."
                 break
               elif [[ "$STATUS" == "failed" ]]; then
-                echo "DAG failed."
+                echo "❌ DAG failed. Showing recent logs:"
+                docker compose logs --tail=100 airflow-scheduler
+                docker compose logs --tail=100 airflow-worker
                 exit 1
               fi
 
-              echo "DAG is still running. Checking again in 60 seconds..."
+              echo "⏳ DAG is still running. Checking again in 60 seconds..."
               sleep 60
             done
           else
-            echo "Airflow webserver is not running. Current status:"
+            echo "❌ Airflow webserver is not running. Current status:"
             docker compose ps
             exit 1
           fi
-
 
  
 ### Model Upload and Deployment
