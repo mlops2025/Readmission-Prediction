@@ -1,3 +1,4 @@
+
 from predict_model import scaler
 
 # These are the features you scaled before prediction
