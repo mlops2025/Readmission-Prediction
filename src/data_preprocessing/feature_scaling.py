@@ -7,6 +7,7 @@ from logger import logging
 from exceptions import CustomException
 import sys
 
+
 PROJECT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
 models_dir=os.path.join(PROJECT_DIR, "airflow", "final_model")
 
