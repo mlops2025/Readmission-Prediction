@@ -63,13 +63,14 @@ jobs:
           echo "Copying over Airflow config files..."
           gcloud compute scp ./docker-compose.yml ${VM_NAME}:~/docker-compose.yml --zone=${VM_ZONE}
           gcloud compute scp ./requirements.txt ${VM_NAME}:~/requirements.txt --zone=${VM_ZONE}
-            - name: Export _PIP_ADDITIONAL_REQUIREMENTS
-              run: |
-                gcloud compute ssh ${VM_NAME} --zone=${VM_ZONE} --command "
-                  export _PIP_ADDITIONAL_REQUIREMENTS=\"\$(cat ~/requirements.txt | tr '\n' ' ')\";
-                  echo \"_PIP_ADDITIONAL_REQUIREMENTS=\${_PIP_ADDITIONAL_REQUIREMENTS}\" >> ~/.bashrc;
-                  source ~/.bashrc;
-                "
+          
+      - name: Export _PIP_ADDITIONAL_REQUIREMENTS
+        run: |
+          gcloud compute ssh ${VM_NAME} --zone=${VM_ZONE} --command "
+            export _PIP_ADDITIONAL_REQUIREMENTS=\"\$(cat ~/requirements.txt | tr '\n' ' ')\";
+            echo \"_PIP_ADDITIONAL_REQUIREMENTS=\${_PIP_ADDITIONAL_REQUIREMENTS}\" >> ~/.bashrc;
+            source ~/.bashrc;
+          "
 
       - name: Start Airflow
         run: |
