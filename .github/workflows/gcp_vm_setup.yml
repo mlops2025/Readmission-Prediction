@@ -2,6 +2,7 @@ name: Setup GCP VM for Airflow
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   create-vm:
