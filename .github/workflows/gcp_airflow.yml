@@ -8,7 +8,7 @@ on:
 
 jobs:
   setup-vm:
-    uses: ./.github/workflows/gcp-vm-setup.yml  # Reuse the VM setup workflow
+    uses: ./.github/workflows/gcp_vm_setup.yml  # Reuse the VM setup workflow
     name: Call VM Setup Workflow
 
   setup_airflow_vm:
