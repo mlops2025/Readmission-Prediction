@@ -10,6 +10,8 @@ jobs:
   setup-vm:
     uses: ./.github/workflows/gcp_vm_setup.yml  # Reuse the VM setup workflow
     name: Call VM Setup Workflow
+    secrets:
+      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
 
   setup_airflow_vm:
     name: Install Airflow and Trigger DAG
