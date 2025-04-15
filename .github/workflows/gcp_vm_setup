@@ -1,0 +1,46 @@
+name: Setup GCP VM for Airflow
+
+on:
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  create-vm:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: readmission-prediction-452220
+        export_default_credentials: true
+
+    - name: Enable Compute Engine API (optional but recommended)
+      run: |
+        gcloud services enable compute.googleapis.com
+
+    - name: Create GCP VM instance
+      run: |
+        gcloud compute instances create airflow-vm \
+          --zone=us-central1-a \
+          --machine-type=e2-micro \
+          --image-family=debian-11 \
+          --image-project=debian-cloud \
+          --boot-disk-size=20GB \
+          --tags=http-server,https-server \
+          --metadata=startup-script='#! /bin/bash
+            sudo apt-get update
+            sudo apt-get install -y python3 python3-pip
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sh get-docker.sh
+            sudo usermod -aG docker $USER
+            newgrp docker
+          '
+
+    - name: Output External IP
+      run: |
+        gcloud compute instances describe airflow-vm \
+          --zone=us-central1-a \
+          --format='get(networkInterfaces[0].accessConfigs[0].natIP)'
