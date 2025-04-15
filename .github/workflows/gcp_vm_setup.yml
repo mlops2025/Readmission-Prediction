@@ -1,3 +1,4 @@
+# .github/workflows/gcp_vm_setup.yml
 name: Setup GCP VM for Airflow
 
 on:
@@ -26,23 +27,24 @@ jobs:
       with:
         project_id: readmission-prediction-452220
 
-    - name: Verify GCP authentication
-      run: |
-        gcloud auth list
-        gcloud config list
-        gcloud compute zones list --limit=1
-
     - name: Enable Compute Engine API
-      run: |
-        gcloud services enable compute.googleapis.com
+      run: gcloud services enable compute.googleapis.com
 
-    - name: Create GCP VM instance (if not exists)
+    - name: Create VM (with cloud-init)
       run: |
-        set -e
+        echo '#cloud-config
+        runcmd:
+          - apt-get update
+          - apt-get install -y python3 python3-pip
+          - curl -fsSL https://get.docker.com -o get-docker.sh
+          - sh get-docker.sh
+          - usermod -aG docker $USER
+          - newgrp docker
+        ' > cloud-init-script.yaml
+
         if gcloud compute instances describe airflow-vm --zone=us-central1-a > /dev/null 2>&1; then
-          echo "VM 'airflow-vm' already exists. Skipping creation."
+          echo "VM exists, skipping creation."
         else
-          echo "Creating VM 'airflow-vm'..."
           gcloud compute instances create airflow-vm \
             --zone=us-central1-a \
             --machine-type=e2-micro \
@@ -50,16 +52,8 @@ jobs:
             --image-project=debian-cloud \
             --boot-disk-size=20GB \
             --tags=http-server,https-server \
-            --metadata=startup-script='#! /bin/bash
-              sudo apt-get update
-              sudo apt-get install -y python3 python3-pip
-              curl -fsSL https://get.docker.com -o get-docker.sh
-              sh get-docker.sh
-              sudo usermod -aG docker $USER
-              newgrp docker
-            '
+            --metadata-from-file startup-script=cloud-init-script.yaml
         fi
-
 
     - name: Get external IP
       id: get-ip

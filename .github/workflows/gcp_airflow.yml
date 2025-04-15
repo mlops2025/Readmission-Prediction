@@ -8,7 +8,7 @@ on:
 
 jobs:
   setup-vm:
-    uses: ./.github/workflows/gcp_vm_setup.yml  # Reuse the VM setup workflow
+    uses: ./.github/workflows/gcp_vm_setup.yml
     name: Call VM Setup Workflow
     secrets:
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
@@ -36,62 +36,72 @@ jobs:
         with:
           project_id: readmission-prediction-452220
 
-      - name: Set up Airflow on existing VM
+      - name: Wait for cloud-init to finish
         run: |
-          # Wait for the startup script to complete and avoid dpkg lock issues
-          gcloud compute ssh ${VM_NAME} --zone=${VM_ZONE} --command "
-          echo 'Waiting for startup script and apt locks to finish...';
-
-          # Wait for cloud-init to complete
-          while [ ! -f /var/lib/cloud/instance/boot-finished ]; do
-            echo 'cloud-init not finished yet. Sleeping...';
-            sleep 10;
-          done;
-
-          # Then wait for any remaining apt locks
-          while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
-            echo 'dpkg lock held. Sleeping...';
-            sleep 10;
-          done;
-
-          echo 'System ready. Proceeding...';
-
-          sudo apt-get update && sudo apt-get install -y docker-compose;
-          sudo systemctl start docker;
-          sudo systemctl enable docker; "
-
-          echo "Copying over Airflow config files..."
-          gcloud compute scp ./docker-compose.yml ${VM_NAME}:~/docker-compose.yml --zone=${VM_ZONE}
-          gcloud compute scp ./requirements.txt ${VM_NAME}:~/requirements.txt --zone=${VM_ZONE}
-          
-      - name: Export _PIP_ADDITIONAL_REQUIREMENTS
-        run: |
-          gcloud compute ssh ${VM_NAME} --zone=${VM_ZONE} --command "
-            export _PIP_ADDITIONAL_REQUIREMENTS=\"\$(cat ~/requirements.txt | tr '\n' ' ')\";
-            echo \"_PIP_ADDITIONAL_REQUIREMENTS=\${_PIP_ADDITIONAL_REQUIREMENTS}\" >> ~/.bashrc;
-            source ~/.bashrc;
+          gcloud compute ssh $VM_NAME --zone=$VM_ZONE --quiet --command "
+            echo 'Waiting for startup script and apt locks to finish...';
+            while [ ! -f /var/lib/cloud/instance/boot-finished ]; do
+              echo 'cloud-init not finished yet. Sleeping...';
+              sleep 10;
+            done;
+            while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+              echo 'dpkg lock held. Sleeping...';
+              sleep 10;
+            done;
+            echo 'System ready. Proceeding...';
           "
 
-      - name: Start Airflow
+      - name: Install docker-compose and enable Docker
         run: |
-          gcloud compute ssh ${VM_NAME} --zone=${VM_ZONE} --command "cd ~ && docker-compose up -d"
+          gcloud compute ssh $VM_NAME --zone=$VM_ZONE --quiet --command "
+            sudo apt-get update &&
+            sudo apt-get install -y docker-compose &&
+            sudo systemctl start docker &&
+            sudo systemctl enable docker
+          "
 
-      - name: Wait for Airflow to Start
+      - name: Copy Airflow config files
         run: |
-          sleep 240 
-          curl --silent --fail http://$VM_IP:8080/health || exit 1
+          gcloud compute scp --quiet ./docker-compose.yml $VM_NAME:~/docker-compose.yml --zone=$VM_ZONE
+          gcloud compute scp --quiet ./requirements.txt $VM_NAME:~/requirements.txt --zone=$VM_ZONE
+
+      - name: Set _PIP_ADDITIONAL_REQUIREMENTS
+        run: |
+          gcloud compute ssh $VM_NAME --zone=$VM_ZONE --quiet --command "
+            export _PIP_ADDITIONAL_REQUIREMENTS=\"\$(cat ~/requirements.txt | tr '\n' ' ')\";
+            echo \"export _PIP_ADDITIONAL_REQUIREMENTS=\$(_PIP_ADDITIONAL_REQUIREMENTS)\" >> ~/.bashrc
+          "
+
+      - name: Start Airflow with docker-compose
+        run: |
+          gcloud compute ssh $VM_NAME --zone=$VM_ZONE --quiet --command "
+            cd ~ && docker-compose up -d
+          "
+
+      - name: Wait for Airflow to become ready
+        run: |
+          echo "Waiting for Airflow Webserver on http://$VM_IP:8080/health ..."
+          for i in {1..30}; do
+            if curl --silent --fail http://$VM_IP:8080/health; then
+              echo "Airflow is healthy!"
+              break
+            else
+              echo "Waiting ($i)..."
+              sleep 10
+            fi
+          done
 
       - name: Trigger DAG
         run: |
-          gcloud compute ssh ${VM_NAME} --zone=${VM_ZONE} --command "
+          gcloud compute ssh $VM_NAME --zone=$VM_ZONE --quiet --command "
             curl -X POST http://localhost:8080/api/v1/dags/DataPipeline/dagRuns \
               -H 'Content-Type: application/json' \
               -d '{\"conf\": {}}'
           "
 
-      - name: Cleanup (Optional)
+      - name: Optional Cleanup
+        if: always()
         run: |
-          gcloud compute ssh ${VM_NAME} --zone=${VM_ZONE} --command "
-            docker-compose down;
-            sudo shutdown now;
+          gcloud compute ssh $VM_NAME --zone=$VM_ZONE --quiet --command "
+            docker-compose down
           "
