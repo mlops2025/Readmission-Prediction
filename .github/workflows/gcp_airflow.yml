@@ -40,17 +40,25 @@ jobs:
         run: |
           # Wait for the startup script to complete and avoid dpkg lock issues
           gcloud compute ssh ${VM_NAME} --zone=${VM_ZONE} --command "
-            echo 'Waiting for apt lock to be released...';
-            while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
-              echo 'Still locked. Sleeping...';
-              sleep 60;
-            done;
+          echo 'Waiting for startup script and apt locks to finish...';
 
-            echo 'Updating and installing docker-compose...';
-            sudo apt-get update && sudo apt-get install -y docker-compose;
-            sudo systemctl start docker;
-            sudo systemctl enable docker;
-          "
+          # Wait for cloud-init to complete
+          while [ ! -f /var/lib/cloud/instance/boot-finished ]; do
+            echo 'cloud-init not finished yet. Sleeping...';
+            sleep 10;
+          done;
+
+          # Then wait for any remaining apt locks
+          while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+            echo 'dpkg lock held. Sleeping...';
+            sleep 10;
+          done;
+
+          echo 'System ready. Proceeding...';
+
+          sudo apt-get update && sudo apt-get install -y docker-compose;
+          sudo systemctl start docker;
+          sudo systemctl enable docker; "
 
           echo "Copying over Airflow config files..."
           gcloud compute scp ./docker-compose.yml ${VM_NAME}:~/docker-compose.yml --zone=${VM_ZONE}
