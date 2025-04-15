@@ -2,7 +2,7 @@ name: Readmission Prediction CI/CD Pipeline
  
 on:
   push:
-    branches: folder_struct
+    # branches: folder_struct
   # schedule:
   #   - cron: '0 0 * * *'  # Runs every day at midnight
   workflow_dispatch:
