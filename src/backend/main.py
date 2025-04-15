@@ -90,11 +90,53 @@ async def search_patient(request: Request):
 
         parsed = decode_one_hot_record(record)
         print(f"[DEBUG] Decoded patient data: {parsed}")
-        return {
+
+        dob_str = parsed.get("dob")
+        age = None
+        if dob_str:
+            try:
+                dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
+                today = datetime.today().date()
+                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            except ValueError:
+                print(f"[WARNING] Invalid DOB format: {dob_str}")
+
+        filtered_data = {
+            "fname": parsed.get("fname"),
+            "lname": parsed.get("lname"),
+            "dob": parsed.get("dob"),
+            "gender": parsed.get("gender"),
+            "race": parsed.get("race"),
+            "admission_type": parsed.get("admission_type"),
+            "admission_source_id": parsed.get("admission_source_id"),
+            "discharge_disposition": parsed.get("discharge_disposition"),
+            "diag_1": parsed.get("diag_1"),
+            "diag_2": parsed.get("diag_2"),
+            "diag_3": parsed.get("diag_3"),
+            "diabetic_medication": parsed.get("diabetic_medication"),
+            "change_num": parsed.get("change_num"),
+            "meds": parsed.get("meds"),
+            "age": age,
+            "time_in_hospital": parsed.get("time_in_hospital"),
+            "num_lab_procedures": parsed.get("num_lab_procedures"),
+            "num_procedures": parsed.get("num_procedures"),
+            "num_medications": parsed.get("num_medications"),
+            "number_outpatient": parsed.get("number_outpatient"),
+            "number_emergency": parsed.get("number_emergency"),
+            "number_inpatient": parsed.get("number_inpatient"),
+            "number_diagnoses": parsed.get("number_diagnoses"),
             "predicted_result": int(record.get("predict", 0)),
             "actual_result": int(record.get("readmitted", -1)) if record.get("readmitted") is not None else -1,
-            **parsed
         }
+
+        return filtered_data
+        # return {
+        #     "predicted_result": int(record.get("predict", 0)),
+        #     "actual_result": int(record.get("readmitted", -1)) if record.get("readmitted") is not None else -1,
+        #     **parsed
+        # }
+
+
 
     except Exception as e:
         print("[ERROR] Exception during patient search:")
