@@ -3,6 +3,9 @@ name: Setup GCP VM for Airflow
 on:
   workflow_dispatch:
   workflow_call:
+    secrets:
+      GCP_SA_KEY:
+        required: true
 
 jobs:
   create-vm:
