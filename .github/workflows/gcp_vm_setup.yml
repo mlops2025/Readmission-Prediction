@@ -34,23 +34,30 @@ jobs:
       run: |
         gcloud services enable compute.googleapis.com
 
-    - name: Create GCP VM instance
+    - name: Create GCP VM instance (if not exists)
       run: |
-        gcloud compute instances create airflow-vm \
-          --zone=us-central1-a \
-          --machine-type=e2-micro \
-          --image-family=debian-11 \
-          --image-project=debian-cloud \
-          --boot-disk-size=20GB \
-          --tags=http-server,https-server \
-          --metadata=startup-script='#! /bin/bash
-            sudo apt-get update
-            sudo apt-get install -y python3 python3-pip
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sh get-docker.sh
-            sudo usermod -aG docker $USER
-            newgrp docker
-          '
+        set -e
+        if gcloud compute instances describe airflow-vm --zone=us-central1-a > /dev/null 2>&1; then
+          echo "VM 'airflow-vm' already exists. Skipping creation."
+        else
+          echo "Creating VM 'airflow-vm'..."
+          gcloud compute instances create airflow-vm \
+            --zone=us-central1-a \
+            --machine-type=e2-micro \
+            --image-family=debian-11 \
+            --image-project=debian-cloud \
+            --boot-disk-size=20GB \
+            --tags=http-server,https-server \
+            --metadata=startup-script='#! /bin/bash
+              sudo apt-get update
+              sudo apt-get install -y python3 python3-pip
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sh get-docker.sh
+              sudo usermod -aG docker $USER
+              newgrp docker
+            '
+        fi
+
 
     - name: Output External IP
       run: |
