@@ -17,10 +17,12 @@ jobs:
         project_id: readmission-prediction-452220
         export_default_credentials: true
     
-    - name: Verify authentication
+    - name: Verify GCP authentication
       run: |
         gcloud auth list
         gcloud config list
+        gcloud compute zones list --limit=1
+
 
 
     - name: Enable Compute Engine API (optional but recommended)
