@@ -10,6 +10,8 @@ on:
 jobs:
   create-vm:
     runs-on: ubuntu-latest
+    outputs:
+      external-ip: ${{ steps.get-ip.outputs.vm_ip }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -62,6 +64,7 @@ jobs:
     - name: Get external IP
       id: get-ip
       run: |
-        echo "vm_ip=$(gcloud compute instances describe airflow-vm \
+        IP=$(gcloud compute instances describe airflow-vm \
           --zone=us-central1-a \
-          --format='get(networkInterfaces[0].accessConfigs[0].natIP)')" >> $GITHUB_OUTPUT
+          --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+        echo "vm_ip=$IP" >> $GITHUB_OUTPUT
