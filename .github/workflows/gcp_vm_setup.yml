@@ -16,6 +16,12 @@ jobs:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
         project_id: readmission-prediction-452220
         export_default_credentials: true
+    
+    - name: Verify authentication
+      run: |
+        gcloud auth list
+        gcloud config list
+
 
     - name: Enable Compute Engine API (optional but recommended)
       run: |
