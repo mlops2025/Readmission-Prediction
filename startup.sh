@@ -40,6 +40,7 @@ SMTP_PASSWORD=$(curl -s "http://metadata.google.internal/computeMetadata/v1/inst
 DB_HOST=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_HOST" -H "Metadata-Flavor: Google")
 DB_NAME=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_NAME" -H "Metadata-Flavor: Google")
 DB_PASS=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_PASS" -H "Metadata-Flavor: Google")
+DB_PORT=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_PORT" -H "Metadata-Flavor: Google")
 DB_USER=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_USER" -H "Metadata-Flavor: Google")
 GCP_BUCKET_NAME=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/GCP_BUCKET_NAME" -H "Metadata-Flavor: Google")
 GCP_PROJECT_ID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/GCP_PROJECT_ID" -H "Metadata-Flavor: Google")
@@ -52,8 +53,8 @@ chown -R "${USER}:${USER}" dags logs plugins config data
 
 echo "[INFO] Starting Airflow containers..."
 export _PIP_ADDITIONAL_REQUIREMENTS="$(cat requirements.txt | tr '\n' ' ')"
-sudo chown -R 50000:0 .
 docker compose up airflow-init
 docker compose up -d
+sudo chown -R 50000:0 .
 
 echo "[✅ SUCCESS] Airflow stack is up and running!"

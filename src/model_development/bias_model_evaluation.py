@@ -11,7 +11,7 @@ from logger import logging
 from google.cloud import storage
 from sqlalchemy import create_engine
 from io import BytesIO
-from src.exceptions import CustomException
+from exceptions import CustomException
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
@@ -31,7 +31,7 @@ def bias_Evaluation():
         load_dotenv()
         DB_NAME = os.getenv('DB_NAME')
         DB_USER = os.getenv('DB_USER')
-        DB_PASSWORD = os.getenv('DB_PASSWORD')
+        DB_PASSWORD = os.getenv('DB_PASS')
         DB_HOST = os.getenv('DB_HOST')
         DB_PORT = os.getenv('DB_PORT')
 
