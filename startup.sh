@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e  # Exit on any error
+set -e  # Exit immediately on any error
 
 echo "[INFO] Updating system and installing prerequisites..."
 apt-get update -y
@@ -11,19 +11,20 @@ add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu fo
 apt-get update -y
 apt-get install -y docker-ce
 
-echo "[INFO] Installing Docker Compose..."
-DOCKER_COMPOSE_VERSION=1.29.2
-curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
-    -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
+echo "[INFO] Installing Docker Compose V2..."
+DOCKER_COMPOSE_VERSION="v2.27.1"
+mkdir -p ~/.docker/cli-plugins/
+curl -SL "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64" -o ~/.docker/cli-plugins/docker-compose
+chmod +x ~/.docker/cli-plugins/docker-compose
+docker compose version  # Verify installation
 
-echo "[INFO] Verifying network..."
-ping -c 3 github.com || echo "⚠️ Warning: GitHub not reachable at first try."
+echo "[INFO] Verifying network connectivity..."
+ping -c 3 github.com || echo "⚠️ GitHub not reachable, continuing anyway."
 
 echo "[INFO] Cloning project repository..."
 cd /home
 
-# Add retry logic in case of temporary failure
+# Add retry logic in case of failure
 for attempt in {1..3}; do
   git clone https://github.com/mlops2025/Readmission-Prediction.git && break
   echo "⚠️ Clone attempt $attempt failed, retrying in 5s..."
@@ -45,14 +46,12 @@ GCP_PROJECT_ID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/ins
 AIRFLOW_UID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/AIRFLOW_UID" -H "Metadata-Flavor: Google")
 EOF
 
-echo "[INFO] Ensuring required directories exist..."
+echo "[INFO] Creating required Airflow directories..."
 mkdir -p dags logs plugins config data data/processed
-chown -R "${USER}":"${USER}" dags logs plugins config data
-export _PIP_ADDITIONAL_REQUIREMENTS="$(cat requirements.txt | tr '\n' ' ')"
+chown -R "${USER}:${USER}" dags logs plugins config data
 
-
-echo "[INFO] Starting Airflow with Docker Compose..."
+echo "[INFO] Starting Airflow containers..."
 docker compose up airflow-init
-docker-compose up -d
+docker compose up -d
 
-echo "[✅ DONE] Airflow stack launched. Check container logs if needed."
+echo "[✅ SUCCESS] Airflow stack is up and running!"
