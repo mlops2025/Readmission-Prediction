@@ -1,6 +1,5 @@
 apache-airflow
 fairlearn
-dvc[gs]
 scikit-learn
 pandas
 numpy
@@ -12,7 +11,7 @@ hyperopt
 mlflow
 pytest
 pandera
-xgboost
+xgboost==1.7.6
 SQLAlchemy
 uvicorn
 
