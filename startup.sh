@@ -51,6 +51,7 @@ export _PIP_ADDITIONAL_REQUIREMENTS="$(cat requirements.txt | tr '\n' ' ')"
 
 
 echo "[INFO] Starting Airflow with Docker Compose..."
+docker compose up airflow-init
 docker-compose up -d
 
 echo "[✅ DONE] Airflow stack launched. Check container logs if needed."
