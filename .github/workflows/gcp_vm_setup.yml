@@ -1,7 +1,7 @@
 name: Deploy Airflow VM on GCP
 
 on:
-  workflow_dispatch:  # Trigger manually
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   deploy-airflow:
@@ -11,19 +11,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Set up Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+    - name: Authenticate with GCP
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
 
-    - name: Enable Compute Engine API (if not already)
+    - name: Enable Compute Engine API
       run: gcloud services enable compute.googleapis.com
 
     - name: Create GCP VM and pass secrets
       run: |
         gcloud compute instances create airflow-vm \
-          --project=${{ secrets.GCP_PROJECT_ID }} \
           --zone=us-central1-a \
           --machine-type=e2-medium \
           --image-family=ubuntu-2204-lts \
@@ -31,16 +34,16 @@ jobs:
           --tags=http-server \
           --metadata-from-file startup-script=./startup.sh \
           --metadata \
-              SMTP_USER=${{ secrets.SMTP_USER }},\
-              SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }},\
-              DB_HOST=${{ secrets.DB_HOST }},\
-              DB_NAME=${{ secrets.DB_NAME }},\
-              DB_USER=${{ secrets.DB_USER }},\
-              DB_PASS=${{ secrets.DB_PASS }},\
-              GCP_BUCKET_NAME=${{ secrets.GCP_BUCKET_NAME }},\
-              GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+            SMTP_USER=${{ secrets.SMTP_USER }},\
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }},\
+            DB_HOST=${{ secrets.DB_HOST }},\
+            DB_NAME=${{ secrets.DB_NAME }},\
+            DB_USER=${{ secrets.DB_USER }},\
+            DB_PASS=${{ secrets.DB_PASS }},\
+            GCP_BUCKET_NAME=${{ secrets.GCP_BUCKET_NAME }},\
+            GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
 
-    - name: Fetch External IP
+    - name: Output External IP
       run: |
         EXTERNAL_IP=$(gcloud compute instances describe airflow-vm \
           --zone=us-central1-a \
