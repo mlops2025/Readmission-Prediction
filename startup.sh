@@ -42,6 +42,7 @@ DB_PASS=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/a
 DB_USER=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_USER" -H "Metadata-Flavor: Google")
 GCP_BUCKET_NAME=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/GCP_BUCKET_NAME" -H "Metadata-Flavor: Google")
 GCP_PROJECT_ID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/GCP_PROJECT_ID" -H "Metadata-Flavor: Google")
+AIRFLOW_UID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/AIRFLOW_UID" -H "Metadata-Flavor: Google")
 EOF
 
 echo "[INFO] Ensuring required directories exist..."
