@@ -51,6 +51,7 @@ mkdir -p dags logs plugins config data data/processed
 chown -R "${USER}:${USER}" dags logs plugins config data
 
 echo "[INFO] Starting Airflow containers..."
+export _PIP_ADDITIONAL_REQUIREMENTS="$(cat requirements.txt | tr '\n' ' ')"
 docker compose up airflow-init
 docker compose up -d
 
