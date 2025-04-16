@@ -1,27 +1,36 @@
 #!/bin/bash
-
-set -e  # Exit on any error
+set -e
 
 echo "[INFO] Updating system and installing Docker..."
 apt-get update -y
 apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
 
-# Install Docker
+echo "[INFO] Installing Docker..."
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
 apt-get update -y
 apt-get install -y docker-ce
 
-# Install Docker Compose
+echo "[INFO] Installing Docker Compose..."
 DOCKER_COMPOSE_VERSION=1.29.2
 curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
     -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
 
+echo "[INFO] Verifying network..."
+ping -c 3 github.com || echo "⚠️ Warning: GitHub not reachable at first try."
+
 echo "[INFO] Cloning project repository..."
 cd /home
-git clone https://github.com/mlops2025/Readmission-Prediction.git
-cd Readmission-Prediction 
+
+# Add retry logic
+for attempt in {1..3}; do
+  git clone https://github.com/mlops2025/Readmission-Prediction.git && break
+  echo "⚠️ Clone attempt $attempt failed, retrying in 5s..."
+  sleep 5
+done
+
+cd Readmission-Prediction || { echo "❌ Failed to cd into repo directory"; exit 1; }
 
 echo "[INFO] Creating .env from metadata..."
 cat <<EOF > .env
