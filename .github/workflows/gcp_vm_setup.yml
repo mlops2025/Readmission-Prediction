@@ -1,70 +1,48 @@
-name: Setup GCP VM for Airflow
+name: Deploy Airflow VM on GCP
 
 on:
-  workflow_dispatch:
-  workflow_call:
-    secrets:
-      GCP_SA_KEY:
-        required: true
+  workflow_dispatch:  # Trigger manually
 
 jobs:
-  create-vm:
+  deploy-airflow:
     runs-on: ubuntu-latest
-    outputs:
-      external-ip: ${{ steps.get-ip.outputs.vm_ip }}
+
     steps:
-    - name: Checkout
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Authenticate with GCP
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
-
     - name: Set up Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v2
+      uses: google-github-actions/setup-gcloud@v1
       with:
-        project_id: readmission-prediction-452220
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
 
-    - name: Verify GCP authentication
+    - name: Enable Compute Engine API (if not already)
+      run: gcloud services enable compute.googleapis.com
+
+    - name: Create GCP VM and pass secrets
       run: |
-        gcloud auth list
-        gcloud config list
-        gcloud compute zones list --limit=1
+        gcloud compute instances create airflow-vm \
+          --project=${{ secrets.GCP_PROJECT_ID }} \
+          --zone=us-central1-a \
+          --machine-type=e2-medium \
+          --image-family=ubuntu-2204-lts \
+          --image-project=ubuntu-os-cloud \
+          --tags=http-server \
+          --metadata-from-file startup-script=./startup.sh \
+          --metadata \
+              SMTP_USER=${{ secrets.SMTP_USER }},\
+              SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }},\
+              DB_HOST=${{ secrets.DB_HOST }},\
+              DB_NAME=${{ secrets.DB_NAME }},\
+              DB_USER=${{ secrets.DB_USER }},\
+              DB_PASS=${{ secrets.DB_PASS }},\
+              GCP_BUCKET_NAME=${{ secrets.GCP_BUCKET_NAME }},\
+              GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
 
-    - name: Enable Compute Engine API
+    - name: Fetch External IP
       run: |
-        gcloud services enable compute.googleapis.com
-
-    - name: Create GCP VM instance (if not exists)
-      run: |
-        set -e
-        if gcloud compute instances describe airflow-vm --zone=us-central1-a > /dev/null 2>&1; then
-          echo "VM 'airflow-vm' already exists. Skipping creation."
-        else
-          echo "Creating VM 'airflow-vm'..."
-          gcloud compute instances create airflow-vm \
-            --zone=us-central1-a \
-            --machine-type=e2-micro \
-            --image-family=debian-11 \
-            --image-project=debian-cloud \
-            --boot-disk-size=20GB \
-            --tags=http-server,https-server \
-            --metadata=startup-script='#! /bin/bash
-              sudo apt-get update
-              sudo apt-get install -y python3 python3-pip
-              curl -fsSL https://get.docker.com -o get-docker.sh
-              sh get-docker.sh
-              sudo usermod -aG docker $USER
-              newgrp docker
-            '
-        fi
-
-
-    - name: Get external IP
-      id: get-ip
-      run: |
-        IP=$(gcloud compute instances describe airflow-vm \
+        EXTERNAL_IP=$(gcloud compute instances describe airflow-vm \
           --zone=us-central1-a \
           --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
-        echo "vm_ip=$IP" >> $GITHUB_OUTPUT
+        echo "✅ Airflow should be live at: http://$EXTERNAL_IP:8080"
