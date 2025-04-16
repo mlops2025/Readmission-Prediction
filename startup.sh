@@ -20,8 +20,8 @@ chmod +x /usr/local/bin/docker-compose
 
 echo "[INFO] Cloning project repository..."
 cd /home
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-cd YOUR_REPO_NAME
+git clone https://github.com/mlops2025/Readmission-Prediction.git
+cd Readmission-Prediction 
 
 echo "[INFO] Creating .env from metadata..."
 cat <<EOF > .env
