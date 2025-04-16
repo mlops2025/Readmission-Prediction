@@ -36,7 +36,7 @@ jobs:
           echo "🚀 Creating VM '$VM_NAME'..."
           gcloud compute instances create "$VM_NAME" \
             --zone="$ZONE" \
-            --machine-type=e2-medium \
+            --machine-type=e2-standard-4 \
             --image-family=ubuntu-2204-lts \
             --image-project=ubuntu-os-cloud \
             --tags=http-server \
