@@ -47,8 +47,11 @@ EOF
 echo "[INFO] Ensuring required directories exist..."
 mkdir -p dags logs plugins config data data/processed
 chown -R "${USER}":"${USER}" dags logs plugins config data
+export _PIP_ADDITIONAL_REQUIREMENTS="$(cat requirements.txt | tr '\n' ' ')"
+
 
 echo "[INFO] Starting Airflow with Docker Compose..."
+dcoker compose up airflow-init
 docker-compose up -d
 
 echo "[✅ DONE] Airflow stack launched. Check container logs if needed."
