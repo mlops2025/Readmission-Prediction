@@ -75,7 +75,7 @@ def load_data():
         )
 
         # === 2. Load data from patients_data ===
-        df = pd.read_sql('SELECT * FROM patients_data', con=engine)
+        df = pd.read_sql('SELECT * FROM patients_data WHERE readmitted IS NOT NULL', con=engine)
         logging.info(f"Loaded {len(df)} records from patients_data table.")
 
         # === 3. Drop unwanted columns ===
@@ -96,7 +96,7 @@ def load_data():
         )
         logging.info(f"Data split into train and test sets. Train size: {len(X_train)}, Test size: {len(X_test)}")
 
-        frac = 0.05
+        frac = 0.02
         X_train = X_train.sample(frac=frac, random_state=42)
         y_train = y_train.loc[X_train.index]
 
@@ -109,44 +109,6 @@ def load_data():
         logging.error(f"Error loading data: {e}")
         raise
 
-# def load_data(train_blob_path, test_blob_path):
-#     """Load train and test data from GCS bucket."""
-#     try:
-#         # Initialize Google Cloud Storage client
-#         storage_client = storage.Client()
-#         bucket = storage_client.bucket(bucket_name)
-        
-#         # Load train data from GCS
-#         train_blob = bucket.blob(train_blob_path)
-#         if not train_blob.exists():
-#             logging.error(f"Train file {train_blob_path} not found in bucket {bucket_name}")
-#             return None
-#         train_data = pd.read_csv(io.BytesIO(train_blob.download_as_string()))
-#         logging.info(f"Loaded train data from {train_blob_path} with shape {train_data.shape}")
-
-#         # Load test data from GCS
-#         test_blob = bucket.blob(test_blob_path)
-#         if not test_blob.exists():
-#             logging.error(f"Test file {test_blob_path} not found in bucket {bucket_name}")
-#             return None
-#         test_data = pd.read_csv(io.BytesIO(test_blob.download_as_string()))
-#         logging.info(f"Loaded test data from {test_blob_path} with shape {test_data.shape}")
-
-#         # Separate features and target
-#         X_train = train_data.drop('readmitted', axis=1)
-#         y_train = train_data['readmitted']
-#         X_test = test_data.drop('readmitted', axis=1)
-#         y_test = test_data['readmitted']
-
-#         X_train = X_train.sample(frac=0.1, random_state=42)
-#         y_train = train_data.loc[X_train.index, 'readmitted']
-
-#         X_test = X_test.sample(frac=0.1, random_state=42)
-#         y_test = test_data.loc[X_test.index, 'readmitted']        
-#         return X_train, y_train, X_test, y_test
-#     except Exception as e:
-#         logging.exception(f"Error loading data from GCS: {e}")
-#         raise
 
 def objective(params, X, y):
     """Objective function for hyperopt to minimize"""
@@ -286,7 +248,7 @@ def train_and_log_model(X_train, y_train, X_test, y_test):
         return best_performance, best_metrics
 
 
-def run_model_development(train_path, test_path, max_attempts=2):
+def run_model_development(max_attempts=2):
     setup_mlflow()
     X_train, y_train, X_test, y_test = load_data()
     attempt = 0
@@ -310,5 +272,5 @@ if __name__ == "__main__":
     PAR_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ".."))
     TRAIN_PATH = os.path.join(PAR_DIRECTORY, "data", "processed", "train_data.csv")
     TEST_PATH = os.path.join(PAR_DIRECTORY, "data", "processed", "test_data.csv")
-    final_metrics = run_model_development(TRAIN_PATH, TEST_PATH)
+    final_metrics = run_model_development()
     print("Final model metrics:", final_metrics)

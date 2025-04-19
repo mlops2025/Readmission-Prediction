@@ -11,7 +11,7 @@ hyperopt
 mlflow
 pytest
 pandera
-xgboost==1.7.6
+xgboost
 SQLAlchemy
 uvicorn
 

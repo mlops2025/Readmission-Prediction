@@ -190,4 +190,5 @@ key.json
 results_*.json
 best_model.json
 
-
+# ignore python environment 
+my_env

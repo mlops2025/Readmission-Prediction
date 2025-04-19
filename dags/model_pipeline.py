@@ -59,11 +59,8 @@ dag_2 = DAG(
 )
 
 def run_model_development_task(**kwargs):
-
-    TRAIN_PATH = "train_data.csv"
-    TEST_PATH = "test_data.csv"
     
-    final_metrics = run_model_development(TRAIN_PATH, TEST_PATH, max_attempts=3)
+    final_metrics = run_model_development(max_attempts=2)
     
     logging.info(f"Final model metrics: {final_metrics}")
     kwargs['ti'].xcom_push(key='final_metrics', value=final_metrics)
