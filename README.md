@@ -454,7 +454,7 @@ GCP Bucket tracking the Data Version for the dataset:
 ![image](assets/GCP_bucket.png)
  
 ## End to End ML pipeline
-![image](assets/end to end mlops pipeline.drawio.png)
+![image](assets/mlops_pipeline.png)
 
 
 ### Pipeline Optimization 
