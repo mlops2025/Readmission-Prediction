@@ -25,7 +25,7 @@ import os
 def bias_Evaluation():
     try:
  
-        KEY_PATH = "config/key.json" 
+        KEY_PATH = "opt/airflow/config/key.json" 
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = KEY_PATH
 
         load_dotenv()
