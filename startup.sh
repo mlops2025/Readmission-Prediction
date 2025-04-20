@@ -47,6 +47,21 @@ GCP_PROJECT_ID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/ins
 AIRFLOW_UID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/AIRFLOW_UID" -H "Metadata-Flavor: Google")
 EOF
 
+#!/bin/bash
+
+# Create the directory
+mkdir -p /opt/airflow/config
+
+# Save the GA_SA_KEY to key.json
+echo "$GA_SA_KEY" > /opt/airflow/config/key.json
+chmod 600 /opt/airflow/config/key.json
+
+# Export GOOGLE_APPLICATION_CREDENTIALS for all future sessions
+echo "export GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/config/key.json" >> /etc/profile
+export GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/config/key.json
+
+echo "[INFO] Service account key saved and environment variable set."
+
 echo "[INFO] Creating required Airflow directories..."
 mkdir -p dags logs plugins config data data/processed
 chown -R "${USER}:${USER}" dags logs plugins config data
