@@ -43,7 +43,7 @@ DB_PASS=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/a
 DB_PORT=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_PORT" -H "Metadata-Flavor: Google")
 DB_USER=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_USER" -H "Metadata-Flavor: Google")
 GCP_BUCKET_NAME=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/GCP_BUCKET_NAME" -H "Metadata-Flavor: Google")
-GA_SA_KEY=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/GA_SA_KEY" -H "Metadata-Flavor: Google")
+GCP_SA_KEY=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/GCP_SA_KEY" -H "Metadata-Flavor: Google")
 GCP_PROJECT_ID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/GCP_PROJECT_ID" -H "Metadata-Flavor: Google")
 AIRFLOW_UID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/AIRFLOW_UID" -H "Metadata-Flavor: Google")
 EOF
@@ -57,7 +57,7 @@ echo "[INFO] Creating required Airflow directories..."
 mkdir -p dags logs plugins config data data/processed
 chown -R "${USER}:${USER}" dags logs plugins config data
 
-echo "$GA_SA_KEY" > /home/Readmission-Prediction/config/key.json
+echo "$GCP_SA_KEY" > /home/Readmission-Prediction/config/key.json
 chmod 600 /home/Readmission-Prediction/config/key.json
 
 echo "[INFO] Starting Airflow containers..."
