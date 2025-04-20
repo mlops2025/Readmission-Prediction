@@ -112,9 +112,9 @@ services:
     user: root
     volumes:
       - ./dags/src/final_model:/app/final_model
-      - ./config/Key.json:/opt/airflow/config/Key.json
+      - ./config/key.json:/opt/airflow/config/key.json
     environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/config/Key.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/config/key.json
   postgres:
     image: postgres:13
     environment:

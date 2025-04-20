@@ -96,7 +96,7 @@ def load_data():
         )
         logging.info(f"Data split into train and test sets. Train size: {len(X_train)}, Test size: {len(X_test)}")
 
-        frac = 0.02
+        frac = 0.01
         X_train = X_train.sample(frac=frac, random_state=42)
         y_train = y_train.loc[X_train.index]
 
