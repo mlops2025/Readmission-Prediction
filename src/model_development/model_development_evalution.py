@@ -187,7 +187,7 @@ def train_and_log_model(X_train, y_train, X_test, y_test):
         best_params = fmin(fn=lambda params: objective(params, X_train, y_train),
                            space=SPACE,
                            algo=tpe.suggest,
-                           max_evals=2,
+                           max_evals=1,
                            trials=trials)
 
         best_model = None
