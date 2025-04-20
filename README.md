@@ -50,122 +50,121 @@ Shape - (101766, 50)
 | 24 medication features | Nominal | Includes insulin, metformin, etc., with dosage change details | 0% |
 | Readmitted        | Nominal   | Indicates if patient was readmitted within 30 days ("<30", ">30", "No") | 0% |
 
-
+## Project Structure
+- **.github/workflows/**: GitHub Actions CI/CD workflows for GCP deployment.
+- **assets/**: Stores images, visualizations, and graphs.
+- **data/**: Contains raw and processed datasets.
+- **dags/**: Source code for data preprocessing, feature engineering, and Airflow DAG.
+- **gcpdeploy/**: Shell scripts and Dockerfiles used to deploy and start the application on GCP VMs.
+- **mlruns/**: MLflow tracking directory for logging experiments and metrics.
+- **config/**: Configuration files for setting paths, parameters, and schemas.
+- **tests/**: Unit tests for validating code functionality.
+- **logs/**: Logs from Airflow tasks and data pipelines.
 
 ## Git repository structure
 ```plaintext
 .
-├── Bias_Plots
+├── .dvc #DVC tracking directory
+│   ├── .gitignore
+│   └── config
+├── .dvcignore #Files to exclude from DVC versioning
+├── .env #Environment variables file
+├── .env.template #Template for environment variables
+├── .github #GitHub-related configurations
+│   └── workflows
+│       ├── GCP_deploy.yml
+│       ├── gcp_airflow.yml
+│       ├── gcp_vm_setup.yml
+│       └── test.yml
+├── .gitignore
+├── Bias_Plots #Output plots from bias analysis
 │   └── Demographics_histogram.png
-├── ML_Project.egg-info
-│   ├── PKG-INFO
-│   ├── SOURCES.txt
-│   ├── dependency_links.txt
-│   ├── requires.txt
-│   └── top_level.txt
-├── README.md
-├── airflow.cfg
-├── assets
+├── Dockerfile #Root Dockerfile for building app container
+├── README.md #Project overview and usage instructions
+├── airflow.cfg #Configuration file for Apache Airflow
+├── assets #Visual assets like plots and screenshots
+│   ├── image-1.png
+│   ├── image-2.png
+│   ├── image-3.png
+│   ├── image-4.png
+│   ├── image.png
+│   ├── main_code.ipynb
 │   └── plots
-│       └── test.png
-├── config
+├── config #Configuration files and credentials
 │   └── key.json
-├── dags
-│   ├── __pycache__
-│   │   ├── data_pipeline.cpython-312.pyc
-│   │   └── test_pipeline.cpython-312.pyc
+├── dags #Airflow DAGs and orchestration logic
 │   ├── data_pipeline.py
+│   ├── model_pipeline.py
 │   ├── notebook.ipynb
 │   ├── src
-│   │   ├── __pycache__
-│   │   │   ├── data_download.cpython-312.pyc
-│   │   │   ├── data_mapping.cpython-312.pyc
-│   │   │   ├── duplicate_missing_values.cpython-312.pyc
-│   │   │   ├── duplicates.cpython-312.pyc
-│   │   │   ├── exceptions.cpython-312.pyc
-│   │   │   ├── logger.cpython-312.pyc
-│   │   │   └── unzip.cpython-312.pyc
-│   │   └── encoder2.py
+│   │   ├── encoder2.py
+│   │   └── final_model
 │   └── test_pipeline.py
-├── data
-│   ├── IDS_mapping.csv
-│   ├── data.zip
-│   ├── diabetic_data.csv
+├── data #Data files, typically processed or raw
 │   └── processed
-│       ├── test_data.csv
+│       ├── .gitignore
 │       ├── test_data.csv.dvc
-│       ├── train_data.csv
 │       └── train_data.csv.dvc
-├── docker-compose.yaml
-├── duplicates.py
-├── gcpdeploy
+├── docker-compose.yaml #Docker Compose file to run multi-container setup
+├── final_model #Contains the best model artifacts and results
+│   ├── best_model.json
+│   ├── best_model.pkl
+│   ├── results_20250321-015003.json
+│   ├── xgboost_20250321-015003.pkl
+│   ├── xgboost_20250321-015003_X_test.csv
+│   └── xgboost_20250321-015003_y_test.csv
+├── gcpdeploy #Scripts and utilities for GCP-based deployment
 │   └── app.py
-├── logs
-│   ├── dag_id=DataPipeline
-│   │   └── run_id=manual__2025-03-01T14:16:23.486880+00:00
-│   │       ├── task_id=dag_completed_email
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=dag_started_email
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=data_bias_task
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=data_mapping_task
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=encoding_task
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=feature_extract_task
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=feature_scaling_task
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=feature_selection_task
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=gcp_upload_task
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=ingest_data_task
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=missing_value_task
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=remove_duplicates_task
-│   │       │   └── attempt=1.log
-│   │       ├── task_id=schema_validation_task
-│   │       │   └── attempt=1.log
-│   │       └── task_id=unzip_file_task
-│   │           └── attempt=1.log
-│   ├── dag_id=test_data_pipeline
-│   │   └── run_id=manual__2025-02-28T22:57:59.046653+00:00
-│   │       └── task_id=run_tests
-│   │           ├── attempt=1.log
-│   │           └── attempt=2.log
+├── google-cloud-sdk
+├── logs #Execution logs from Airflow, ML, etc.
+│   ├── 02_28_2025_09_11_48.log
+│   ├── ...log
+│   ├── dag_id=ModelDevelopmentPipeline
+│   │   └── run_id=manual__2025-03-21T01:49:57.682482+00:00
+│   │       ├── task_id=best_model_selection_task
+│   │       └── task_id=run_model_development
 │   ├── dag_processor_manager
 │   │   └── dag_processor_manager.log
+│   ├── ml_metrics.log
 │   └── scheduler
-│       ├── 2025-03-01
+│       ├── 2025-04-04
 │       │   ├── data_pipeline.py.log
+│       │   ├── model_pipeline.py.log
 │       │   └── test_pipeline.py.log
-│       └── latest -> 2025-03-01
+│       └── latest -> 2025-04-04
+├── mlflow.db
+├── mlruns #MLflow run tracking and artifacts
+│   ├── .trash
+│   ├── 0
+│   │   ├── e08eb9c1f3b14d79a26f4981a54e2b90
+│   │   │   ├── artifacts
+│   │   │   ├── meta.yaml
+│   │   │   ├── metrics
+│   │   │   ├── params
+│   │   │   └── tags
+│   │   └── meta.yaml
+│   └── models
 ├── plugins
-├── requirements.txt
+├── requirements.txt #Python dependencies for backend or ML pipeline
 ├── setup.py
-├── src
+├── src #Core source code: backend, frontend, ML pipeline
 │   ├── __init__.py
-│   ├── __pycache__
-│   │   ├── exceptions.cpython-312.pyc
-│   │   └── logger.cpython-312.pyc
+│   ├── backend
+│   │   ├── Dockerfile
+│   │   ├── db.py
+│   │   ├── decode.py
+│   │   ├── gcs_utils.py
+│   │   ├── main.py
+│   │   ├── models
+│   │   │   └── my_model.pkl
+│   │   ├── models.py
+│   │   ├── predict_model.py
+│   │   └── requirements.txt
+│   ├── dags
+│   │   └── logs
+│   │       └── push_to_gcp.log
 │   ├── data_preprocessing
 │   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   │   ├── __init__.cpython-312.pyc
-│   │   │   ├── bias.cpython-312.pyc
-│   │   │   ├── data_download.cpython-312.pyc
-│   │   │   ├── data_mapping.cpython-312.pyc
-│   │   │   ├── data_schema_statistics_generation.cpython-312.pyc
-│   │   │   ├── duplicate_missing_values.cpython-312.pyc
-│   │   │   ├── encoder.cpython-312.pyc
-│   │   │   ├── feature_extract.cpython-312.pyc
-│   │   │   ├── feature_scaling.cpython-312.pyc
-│   │   │   ├── feature_selection.cpython-312.pyc
-│   │   │   ├── traintest.cpython-312.pyc
-│   │   │   └── unzip.cpython-312.pyc
 │   │   ├── bias.py
 │   │   ├── data_download.py
 │   │   ├── data_mapping.py
@@ -175,17 +174,41 @@ Shape - (101766, 50)
 │   │   ├── feature_extract.py
 │   │   ├── feature_scaling.py
 │   │   ├── feature_selection.py
+│   │   ├── push_to_database.py
 │   │   ├── test.py
 │   │   ├── traintest.py
 │   │   └── unzip.py
 │   ├── exceptions.py
+│   ├── frontend
+│   │   ├── .gitignore
+│   │   ├── Dockerfile
+│   │   ├── eslint.config.js
+│   │   ├── firebase.json
+│   │   ├── index.html
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── App.jsx
+│   │   │   ├── LandingPage.jsx
+│   │   │   ├── PatientDetails.jsx
+│   │   │   ├── PredictionForm.jsx
+│   │   │   ├── SearchPage.jsx
+│   │   │   ├── images
+│   │   │   ├── index.css
+│   │   │   └── main.jsx
+│   │   └── vite.config.js
 │   ├── logger.py
+│   ├── model_development
+│   │   ├── best_model_selection.py
+│   │   ├── bias_model_evaluation.py
+│   │   ├── gcs_model_push.py
+│   │   └── model_development_evalution.py
 │   └── test.py
+├── startup.sh #Script executed on GCP VM startup
 ├── testfile_dup.py
-├── tests
+├── tests #Unit tests for different modules
 │   └── test_data.py
-├── tree.txt
-└── webserver_config.py
+└── webserver_config.py #Optional config file for the MLflow/Flask server
 
 ```
 
@@ -391,6 +414,85 @@ The schema generation process ensures data integrity by enforcing type constrain
 
 Related file: data_schema_statistics_generation.py
 
+## Tools used for MLOps
+
+- GitHub Actions
+- Docker
+- Airflow
+- Google Cloud Platform (GCP)
+- Google Cloud Storage (GCS)
+
+### Github Actions
+
+GitHub Actions serves as the backbone of our CI/CD automation. It is configured to trigger workflows on push or pull request events to the main branch as well as other active branches like folder_struct. These workflows automatically handle unit testing, code linting, and build verification. When a new commit is pushed, the corresponding GitHub Actions workflow initiates test discovery in the tests/ directory, targeting scripts in the dags/ folder. Test results are collected as XML reports and preserved as GitHub build artifacts. Beyond unit testing, the workflow ensures code quality by assessing style consistency, documentation, and scanning for potential security vulnerabilities. Once all checks are successfully passed, changes can be safely merged into the main branch, facilitating a continuous integration pipeline.
+
+### Docker and Airflow
+
+Containerization is achieved using Docker, with a well-defined docker-compose.yaml that encapsulates all essential components of the pipeline—including Apache Airflow, MLflow, PostgreSQL, and Redis. Apache Airflow is used to orchestrate data engineering tasks, preprocessing workflows, model training, and evaluation. This container-based setup ensures that all services run with their required dependencies, eliminating environment inconsistency issues across development and production. Whether you're running on macOS, Windows, or Linux, the pipeline remains portable and reproducible, thanks to Docker’s platform-agnostic nature.
+
+### Google Cloud Platform (GCP)
+
+Google Cloud Platform (GCP) powers the backend infrastructure for deploying and running the pipeline in production. We use Google Compute Engine to automatically provision VMs via GitHub Actions workflows. Once a VM is created, a startup.sh script is executed to install Docker, clone the repository, and launch the Airflow pipeline using docker-compose. In addition, we utilize Google Cloud Storage (GCS) to store trained machine learning models and other artifacts. These models can be pulled into the pipeline for evaluation or redeployment, offering a centralized and secure storage solution.
+
+To interact with GCP services securely, users must create and configure a service account. This involves accessing the Google Cloud Console, navigating to the IAM & Admin section, and creating a new service account with the required roles such as Storage Admin and Compute Admin. Afterward, a key in JSON format should be generated and securely stored. This key can be added to the project either through GitHub Secrets or placed in a secure folder like config/Key.json on the VM. However, if users do not wish to manage their own GCP credentials, they may request access to our publicly available GCS bucket to retrieve necessary artifacts and avoid the setup altogether.
+
+### Google Cloud Storage (GCS)
+Google Cloud Storage (GCS) is used as the centralized and secure location to store critical machine learning artifacts such as:
+
+ - Trained model files (e.g., model.pkl)
+ - Scaler/transformer objects (e.g., scaler.pkl)
+ - Intermediate data used during preprocessing or transformation
+
+At application startup, the FastAPI backend downloads the latest model and scaler directly from GCS using the google-cloud-storage Python SDK, ensuring real-time inference always uses the most up-to-date artifacts.
+
+This integration with GCS enables:
+ - Seamless deployment cycles via GitHub Actions (model upload → GCS → FastAPI pulls latest)
+ - Secure storage of sensitive model assets with GCP IAM permissions
+ Version control support when paired with MLflow artifact tracking
+
+GCP Bucket tracking the Data Version for the dataset:
+![image](assets/GCP_bucket.png)
+ 
+## End to End ML pipeline
+![image](assets/end to end mlops pipeline.drawio.png)
+
+
+### Pipeline Optimization 
+![alt text](assets/image.png)
+
+Pictured above: Airflow DAG Execution Gantt Chart for Data Pipeline. It is a popular project management tool used to visualize and track the progress of tasks or activities over time. It provides a graphical representation of a pipeline's schedule, showing when each task is planned to start and finish.
+
+## Data preprocessing:
+
+#### Handling Missing Values: 
+
+Identified and addressed missing entries in the dataset to prevent biases and errors during model training. Techniques such as imputation or removal were applied based on the nature and extent of missingness.
+
+
+#### Encoding Categorical Variables: 
+Converted categorical features (e.g., gender, race, admission type) into numerical representations using methods like one-hot encoding, facilitating their use in machine learning algorithms.​
+
+
+#### Feature Scaling: 
+Standardized numerical features to ensure that each contributes equally to the model's learning process, preventing features with larger scales from dominating.​
+
+
+#### Feature Selection and Engineering: 
+Selected relevant features based on domain knowledge and statistical methods. Engineered new features, such as age from date of birth, to enhance model performance.​
+
+
+#### Outlier Detection and Treatment: 
+Identified anomalous data points that could skew the model's learning and applied appropriate methods to mitigate their impact.​
+
+
+#### Data Splitting: 
+Divided the dataset into training and testing subsets to evaluate model performance on unseen data, ensuring generalizability.​
+
+
+#### Data Validation: 
+Implemented validation checks to ensure data integrity and consistency throughout the preprocessing pipeline.
+
+
 ### Bias Detection
 
 Bias evaluation examines demographic disparities in age, gender, and race using data visualization and machine learning models. The approach includes assessing bias metrics like demographic parity ratio and equalized odds ratio before and after applying fairness techniques such as Threshold Optimization, ensuring the model makes equitable predictions across different groups.
@@ -403,11 +505,6 @@ Related file: bias.py
 
 Splits the dataset into training and testing sets and uploads them to Google Cloud Storage (GCS). It handles errors gracefully by checking for bucket existence, logging progress, and retrying failed uploads. The processed data is first saved locally before being uploaded to GCS as CSV files.
 
-### Pipeline Optimization 
-![alt text](assets/image.png)
-
-Pictured above: Airflow DAG Execution Gantt Chart for Data Pipeline. It is a popular project management tool used to visualize and track the progress of tasks or activities over time. It provides a graphical representation of a pipeline's schedule, showing when each task is planned to start and finish.
-
 ### Email Alerts
 
 Alerts on DAG Start, Complete and if any failure in tasks
@@ -418,17 +515,25 @@ Alerts on DAG Start, Complete and if any failure in tasks
 
 ![alt text](assets/image-4.png)
 
-### Future Enhancements
+## Model Deployment on a GCP VM:
 
-  - Model Training and Deployment:
-  - Extend the pipeline to include a training module and automate the deployment of the predictive model.
-  - Real-Time Processing:
-    - Incorporate real-time data ingestion for up-to-date readmission predictions.
-  - Advanced Bias Mitigation:
-    - Implement additional fairness techniques and explainability tools to further ensure the model's transparency and reliability.
+### Step 1: Authenticate and Set Up Google Cloud
 
+The workflow authenticates with Google Cloud using a service account key stored securely as GCP_SA_KEY in GitHub Secrets. It then installs and configures the Google Cloud CLI (gcloud) to enable interactions with GCP services, including Compute Engine. The workflow also ensures that the Compute Engine API is enabled in the project, which is necessary for creating and managing virtual machine instances.
+
+### Step 2: Trigger Deployment from GitHub
+
+Deployment begins when the GitHub Actions workflow named Deploy Airflow VM on GCP is manually triggered using the workflow_dispatch event. This action allows users to deploy the full project—including Airflow, model pipeline, and supporting services—into a Google Cloud VM with just one click from the GitHub UI.
     
+### Step 3: Provision the GCP Virtual Machine
 
+The workflow defines a VM named airflow-vm in the us-central1-a zone. Before creating it, the workflow checks if the VM already exists to avoid unnecessary duplication. If not found, it provisions a new VM with the following configuration:
 
+- Machine type: e2-standard-4 (4 vCPUs, 16 GB RAM)
+- Boot disk: Ubuntu 22.04 LTS with 30 GB storage
+- Network tags: http-server to allow inbound HTTP traffic
+- Startup script: startup.sh, uploaded as instance metadata
+- Metadata attributes: Sensitive information such as database credentials and SMTP settings are securely passed via instance metadata
 
+This design ensures a reproducible and secure VM setup, with secrets injected at runtime rather than hardcoded.
 
