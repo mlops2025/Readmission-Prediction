@@ -296,7 +296,7 @@ def dashboard_creation():
         st.error("An error occurred while generating the dashboard.")
 
 # Call the function
-dashboard_creation()
+#dashboard_creation()
 
 
 
