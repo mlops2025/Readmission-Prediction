@@ -24,6 +24,9 @@ jobs:
     - name: Enable Compute Engine API
       run: gcloud services enable compute.googleapis.com
 
+    - name: Save GCP SA Key to file
+      run: echo '${{ secrets.GCP_SA_KEY }}' > gcp_sa_key.json
+
     - name: Check if VM exists and create if not
       run: |
         VM_NAME="airflow-vm"
@@ -41,8 +44,8 @@ jobs:
             --image-family=ubuntu-2204-lts \
             --image-project=ubuntu-os-cloud \
             --tags=http-server \
-            --metadata-from-file=startup-script=./startup.sh \
-            --metadata "SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }},DB_HOST=${{ secrets.DB_HOST }},DB_PORT=${{ secrets.DB_PORT }},DB_NAME=${{ secrets.DB_NAME }},DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},GCP_BUCKET_NAME=${{ secrets.GCP_BUCKET_NAME }},GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},AIRFLOW_UID=${{ secrets.AIRFLOW_UID }},GCP_SA_KEY=${{ secrets.GCP_SA_KEY }}"
+            --metadata-from-file=startup-script=./startup.sh,GCP_SA_KEY=gcp_sa_key.json \
+            --metadata "SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }},DB_HOST=${{ secrets.DB_HOST }},DB_PORT=${{ secrets.DB_PORT }},DB_NAME=${{ secrets.DB_NAME }},DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},GCP_BUCKET_NAME=${{ secrets.GCP_BUCKET_NAME }},GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},AIRFLOW_UID=${{ secrets.AIRFLOW_UID }}"
         fi
 
     - name: Output External IP
