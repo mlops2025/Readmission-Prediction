@@ -492,14 +492,21 @@ Divided the dataset into training and testing subsets to evaluate model performa
 #### Data Validation: 
 Implemented validation checks to ensure data integrity and consistency throughout the preprocessing pipeline.
 
+### Hyperparameter Tuning 
 
-### Bias Detection
+ The model development workflow automates the process of training, evaluation, and selecting the best-performing model. The training data is divided and stored in GCS, then retrieved for processing. XGBoost classifiers are employed with efficient hyperparameter tuning and experiment tracking.
 
-Bias evaluation examines demographic disparities in age, gender, and race using data visualization and machine learning models. The approach includes assessing bias metrics like demographic parity ratio and equalized odds ratio before and after applying fairness techniques such as Threshold Optimization, ensuring the model makes equitable predictions across different groups.
+ Hyperopt is utilized for hyperparameter optimization, leveraging the Tree-structured Parzen Estimator (TPE) algorithm. The following XGBoost hyperparameters are fine-tuned:
 
-Related file: bias.py
+ - n_estimator
+ - learning_rate
+ - max_depth
+ - min_child_weight
+ - gamma 
+ - booster
 
-![alt text](assets/image-1.png)
+ Each combination is assessed using 3-fold cross-validation on the training data. The model with the best performance, determined by accuracy and F1 score, is selected, ensuring a balanced trade-off between precision and recall.
+
 
 ### Upload train and test to GCP
 
@@ -537,3 +544,50 @@ The workflow defines a VM named airflow-vm in the us-central1-a zone. Before cre
 
 This design ensures a reproducible and secure VM setup, with secrets injected at runtime rather than hardcoded.
 
+
+## Bias Model Evaluation:
+
+The bias_Evaluation() function assesses the fairness of the model by analyzing demographic biases related to gender and race. The process includes the following steps:
+
+#### 1. Load Data and Model:
+ - Retrieves the training and test datasets from the data/processed/ directory.
+ - Loads the final model from the final_model/ directory.
+ - Creates a "race" column, classifying data as Caucasian (1) or Other (0), while removing instances with missing values (except for African American records).
+
+#### 2. Fairness Metrics Calculation (Using Fairlearn):
+ - **Disparate Impact Ratio**: Measures the ratio of positive outcomes between different demographic groups.
+
+ - **Demographic Parity Ratio**: Compares the positive prediction rates across sensitive groups.
+
+ - **Equalized Odds Ratio**: Ensures equal false positive and false negative rates across demographic groups.
+
+
+#### 3. Fairness Mitigation Using Fairlearn’s ThresholdOptimizer:
+ To mitigate bias, Fairlearn’s ThresholdOptimizer is used with the "equalized_odds" constraint.
+
+#### 4. Slice-Based Performance Evaluation:
+ We perform data slicing to assess model performance across different demographic groups:
+ - Slicing by Gender (gender_Male)
+ - Slicing by Race (race)
+
+Performance metrics such as accuracy, precision, recall, and F1-score are analyzed for each demographic group.
+
+#### 5. Visualization and Interpretation of Bias Metrics:
+ Generates bar plots to visualize model performance variations across demographic slices.
+ Saves the bias analysis plots (Bias_Gender.png and Bias_Race.png) in the Bias_Plots/ directory.
+ ![alt text]
+
+
+ - **Disparate Impact**: A ratio of 1 indicates no disparity or equal impact across groups.
+    - Gender (0.82): A slight imbalance, suggesting that one gender (likely females) is underrepresented.
+    - Race (1.65): Significant disparity between racial groups in the model's predictions. Since the dataset is majority Caucasian, this result is expected.
+
+ - **Demographic Parity Ratio (0.35)**: A value of 0.35 suggests the model is more favorable toward one group, which is expected given the majority Caucasian dataset.
+
+ - **Gender Results**: Both genders show similar performance metrics, with a slight difference in F1-score (0.60 for males and 0.62 for females), indicating a moderate disparity in model performance between genders.
+
+ - **Race Results**: Group 1.0 (likely Caucasian): Higher performance across all metrics (Accuracy: 0.70, Precision: 0.69, Recall: 0.70, F1-score: 0.67).
+
+ - **Group 0.0 (likely non-Caucasian)**: Slightly lower performance across all metrics (Accuracy: 0.61, Precision: 0.62, Recall: 0.61, F1-score: 0.60).
+
+Given the majority Caucasian dataset, these results are expected.
