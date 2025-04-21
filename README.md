@@ -631,8 +631,8 @@ The backend service is fully automated using GitHub Actions for Continuous Integ
 
 This project leverages GitHub Actions to implement Continuous Integration and Deployment (CI/CD) for the model pipeline. Any changes to the main branch automatically trigger the pipeline, enabling smooth and automated updates and deployments.
 
-● Code yml file : .github/workflows/GCP_deploy.yml
-● Startup and Setup script for CI-CD : startup.sh
+    - ● Code yml file : .github/workflows/GCP_deploy.yml
+    - ● Startup and Setup script for CI-CD : startup.sh
 
 ### Overview
 This project leverages two GitHub Actions workflows to automate end-to-end deployment and orchestration in a production-like environment:
@@ -645,7 +645,7 @@ This project leverages two GitHub Actions workflows to automate end-to-end deplo
       - Deploys the services to Google Cloud Run, ensuring zero-downtime and scalable deployment.
 
 
-  2. Deploy Airflow VM on GCP:
+ 2. Deploy Airflow VM on GCP:
       This is a manually triggered (workflow_dispatch) pipeline designed to:
       - Spin up a new Compute Engine VM instance if it doesn't already exist.
       - Deploy Apache Airflow using a startup script (startup.sh), setting up the orchestration environment for running ML workflows.
@@ -661,6 +661,79 @@ These CI/CD workflows ensure that:
 - Go to the GCP Console and Navigate to the IAM & Admin → Service Accounts
 - Create a New Service Account: Click + Create Service Account.
 - Fill in the Service Account Name and Description. Click Create and Continue.
+
+#### Step 2: Assign Roles to the Service Account
+ - Navigate to the Service Accounts section and locate your newly created service account. Click on the email ID to open its details.
+ - Go to the Permissions tab, click Grant Access, then choose Add Another Role. Assign roles relevant to your CI/CD pipeline requirements, such as access to Cloud Run, Artifact Registry, Compute Engine, or Storage.
+     - Cloud Run Admin (roles/run.admin) — To manage Cloud Run services, including deploying, updating, and deleting services.
+     - Artifact Registry Reader (roles/artifactregistry.reader) — To allow access to view and pull container images from the Artifact Registry.
+     - Compute Admin (roles/compute.admin) — To manage and administer Google Compute Engine resources, including creating, modifying, and deleting VMs, disks, and related compute resources.
+     - Service Account User (roles/iam.serviceAccountUser) — To allow impersonation of this service account, enabling workflows to act on its behalf for API calls or deployments.
+     - Owner (roles/owner) — Grants full access to all resources, including the ability to manage IAM roles and permissions.
+     - Viewer (roles/viewer) — Read-only access to all resources, allowing monitoring and auditability without modification access.
+
+After assigning the roles, click Save to apply the changes.
+![alt text](assets/cicd_step2.png)
+
+#### Step 3: Service Account key
+For our custom-created service account, we have generated a key file, which can now be used for authentication in local development or CI/CD environments.
+
+#### Step 4: Add the Key to GitHub Secrets
+Go to Your GitHub Repository: Navigate to the repository → Settings → Secrets and variables → Actions → New repository secret. Add a New Secret: GCP_SA_KEY -> Copy and paste the contents of the JSON key file 
+
+#### Step 5: Update Your GitHub Actions Workflow
+Add the secret key in the workflow as below, (gcp_vm_setup.yml)
+![alt text](assets/cicd_step5.png)
+
+All steps are automated through GitHub Actions using gcloud CLI commands. A custom service account with the required roles is authenticated using a service account key stored securely in GitHub Secrets.
+
+## CI/CD Implementation
+### CICD - Run
+When the workflows are completed successfully:
+  1. Build, Push & Deploy to Cloud Run:
+     ![alt text](assets/cicd_img1.png)
+
+  2. Deploy Airflow VM on GCP:
+     ![alt text](assets/cicd_img2.png)
+
+Total Run time Durations of both:
+  1. Build, Push & Deploy to Cloud Run: 3m 17s
+     ![alt text](assets/cicd_img1.png)
+
+  2. Deploy Airflow VM on GCP: 41s
+     ![alt text](assets/cicd_img2.png)
+
+### CICD - Validation
+
+#### Logging and Monitoring
+In our system, we utilize Google BigQuery to log and monitor the performance of our machine learning models and infrastructure. This enables us to ensure optimal performance and scalability by tracking key metrics such as model response timings and VM instance CPU utilization.
+
+#### Big Query:
+ - **Step 1: Create Dataset**
+    - Navigate to Google Console then search Big Query 
+    - Open Big Query Studio, then right click project create Dataset 
+    - Enter the below details
+       - NAME: Model_Metrics
+       - DATA LOCATION: US 
+    - Click create Dataset
+
+ - **Step 2: Create a Table**
+    - Navigate to the newly created Dataset, click the three dots and click New Table
+    - Enter the details as below,
+       - Name: Model_Metrics_table
+    - Data Location: US
+    - Click create table
+    - Navigate to schema section and click edit schema and paste the below content
+    ```sh
+      [
+      {"name": "timestamp", "type": "timestamp", "mode": "NULLABLE"},
+      {"name": "endpoint", "type": "STRING", "mode": "NULLABLE"},
+      {"name": "input_data", "type": "STRING", "mode": "NULLABLE"},
+      {"name": "prediction", "type": "STRING", "mode": "NULLABLE"},
+      {"name": "response_time", "type": "FLOAT", "mode": "NULLABLE"},
+      {"name": "status", "type": "STRING", "mode": "NULLABLE"}
+      ] ```
+
 
 
 ## Dashboard:
@@ -680,7 +753,15 @@ These CI/CD workflows ensure that:
 
   ![alt text](assets/DB_img_1.png)
   ![alt text](assets/DB_img_2.png)
-  ![alt text](assets/DB_img_3.png)
+  ![alt text](assets/Dashboard_Screenshot_1.png)
+  ![alt text](assets/Dashboard_Screenshot.png)
+
+### Dashboard (Monitoring Response time)
+![alt text](assets/DB_img_4.png)
+
+### VM instance CPU Utilization
+![alt text](assets/cpu.png)
+
 
 
 
