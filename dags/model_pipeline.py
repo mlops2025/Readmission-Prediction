@@ -60,7 +60,7 @@ dag_2 = DAG(
 
 def run_model_development_task(**kwargs):
     
-    final_metrics = run_model_development(max_attempts=1)
+    final_metrics = run_model_development(max_attempts=3)
     
     logging.info(f"Final model metrics: {final_metrics}")
     kwargs['ti'].xcom_push(key='final_metrics', value=final_metrics)

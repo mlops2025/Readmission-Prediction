@@ -96,7 +96,7 @@ def load_data():
         )
         logging.info(f"Data split into train and test sets. Train size: {len(X_train)}, Test size: {len(X_test)}")
 
-        frac = 0.01
+        frac = 0.9
         X_train = X_train.sample(frac=frac, random_state=42)
         y_train = y_train.loc[X_train.index]
 
@@ -187,7 +187,7 @@ def train_and_log_model(X_train, y_train, X_test, y_test):
         best_params = fmin(fn=lambda params: objective(params, X_train, y_train),
                            space=SPACE,
                            algo=tpe.suggest,
-                           max_evals=1,
+                           max_evals=10,
                            trials=trials)
 
         best_model = None
@@ -248,7 +248,7 @@ def train_and_log_model(X_train, y_train, X_test, y_test):
         return best_performance, best_metrics
 
 
-def run_model_development(max_attempts=2):
+def run_model_development(max_attempts=3):
     setup_mlflow()
     X_train, y_train, X_test, y_test = load_data()
     attempt = 0

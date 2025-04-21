@@ -81,7 +81,7 @@ email_notification_task = EmailOperator(
     task_id='dag_started_email',
     to='mlopsneu2025@gmail.com',
     subject='Data Pipeline Dag Started',
-    html_content='<p> ✅ Data Pipeline Dag Completed</p>',
+    html_content='<p> ✅ Data Pipeline Dag Started</p>',
     dag=dag,
 )
 
