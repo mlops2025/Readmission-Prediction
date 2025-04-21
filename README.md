@@ -524,7 +524,7 @@ Alerts on DAG Start, Complete and if any failure in tasks
 
 ## Model Deployment on a GCP VM:
 
-### Step 1: Authenticate and Set Up Google Cloud
+### Step 1: Create a VM Instance and Set Up Environment
 
 The workflow authenticates with Google Cloud using a service account key stored securely as GCP_SA_KEY in GitHub Secrets. It then installs and configures the Google Cloud CLI (gcloud) to enable interactions with GCP services, including Compute Engine. The workflow also ensures that the Compute Engine API is enabled in the project, which is necessary for creating and managing virtual machine instances.
 
@@ -575,8 +575,6 @@ Performance metrics such as accuracy, precision, recall, and F1-score are analyz
 #### 5. Visualization and Interpretation of Bias Metrics:
  Generates bar plots to visualize model performance variations across demographic slices.
  Saves the bias analysis plots (Bias_Gender.png and Bias_Race.png) in the Bias_Plots/ directory.
- ![alt text]
-
 
  - **Disparate Impact**: A ratio of 1 indicates no disparity or equal impact across groups.
     - Gender (0.82): A slight imbalance, suggesting that one gender (likely females) is underrepresented.
@@ -591,3 +589,99 @@ Performance metrics such as accuracy, precision, recall, and F1-score are analyz
  - **Group 0.0 (likely non-Caucasian)**: Slightly lower performance across all metrics (Accuracy: 0.61, Precision: 0.62, Recall: 0.61, F1-score: 0.60).
 
 Given the majority Caucasian dataset, these results are expected.
+ Pictured below: Bias Race
+ ![alt text](Bias_Plots/bias1.png)
+
+ Pictured below: Bias Gender
+ ![alt text](Bias_Plots/bias2.png)
+
+## FastAPI - Backend API with Prediction Interface:
+
+The backend for the Diabetic Readmission Prediction tool is built using FastAPI, hosted on port 8080, and deployed on a Google Cloud Platform (GCP) VM. This backend powers the real-time inference engine accessed by the healthcare staff via a frontend application.
+
+Core Functionalities:
+- /predict — Accepts patient information and returns model prediction.
+
+- /update-actual-result — Allows manual entry of real patient outcomes to refine post-prediction evaluation.
+
+- /search-patient — Looks up existing patient data, decodes it, and returns a user-friendly response.
+
+### Frontend Integration
+
+The frontend interface is designed to work with this FastAPI backend. Once the Launch Prediction Tool button is clicked, users are redirected to a form where they can:
+
+- Enter real-time patient features
+
+- Get an immediate prediction result
+
+- Update true patient outcomes for ongoing model evaluation
+
+The communication between frontend and backend is secured via CORS configuration, allowing cross-origin requests from: http://localhost:5173
+
+## CI/CD Integration with GitHub Actions
+
+The backend service is fully automated using GitHub Actions for Continuous Integration and Deployment (CI/CD). This ensures that any new changes pushed to the main branch are automatically tested, deployed, and ready for production.
+
+ **Relevant CI/CD Files**:
+   - CI/CD Workflow File: .github/workflows/CI_CD_gcp_fastapi.yml
+   - Setup Script: setup-fastapi.sh
+   - Startup Script: startup-fastapi.sh
+
+### Automated CI/CD Integration
+
+This project leverages GitHub Actions to implement Continuous Integration and Deployment (CI/CD) for the model pipeline. Any changes to the main branch automatically trigger the pipeline, enabling smooth and automated updates and deployments.
+
+● Code yml file : .github/workflows/GCP_deploy.yml
+● Startup and Setup script for CI-CD : startup.sh
+
+### Overview
+This project leverages two GitHub Actions workflows to automate end-to-end deployment and orchestration in a production-like environment:
+
+ 1. Build, Push & Deploy to Cloud Run:
+      This workflow is automatically triggered whenever changes are pushed to specific branches and relevant paths (frontend/backend code or Dockerfiles). It performs the following:
+
+      - Builds Docker images for both frontend and backend services.
+      - Pushes these images to Google Artifact Registry.
+      - Deploys the services to Google Cloud Run, ensuring zero-downtime and scalable deployment.
+
+
+  2. Deploy Airflow VM on GCP:
+      This is a manually triggered (workflow_dispatch) pipeline designed to:
+      - Spin up a new Compute Engine VM instance if it doesn't already exist.
+      - Deploy Apache Airflow using a startup script (startup.sh), setting up the orchestration environment for running ML workflows.
+      - Expose Airflow via the VM's external IP on port 8080, enabling web access.
+
+These CI/CD workflows ensure that:
+- The latest code and models are automatically tested and deployed with every valid push.
+- The infrastructure for ML orchestration (Airflow) can be set up on-demand, supporting scalability and experimentation.
+- Environment variables and secrets are securely managed via GitHub Secrets, maintaining both security and automation.
+
+#### Step 1: Set Up a Service Account
+
+- Go to the GCP Console and Navigate to the IAM & Admin → Service Accounts
+- Create a New Service Account: Click + Create Service Account.
+- Fill in the Service Account Name and Description. Click Create and Continue.
+
+
+## Dashboard:
+
+ Streamlit dashboard to visualize and analyze patient readmission data. It performs the following tasks:
+
+ - **1. Data Loading & Preprocessing**:
+     - Loads scaled patient data from a PostgreSQL database.
+     - Reverses scaling for original values using a scaler stored in Google Cloud Storage (GCS).
+
+ - **2. Streamlit UI**:
+     - Displays patient visit history, health index vs. readmission status, and readmission analysis with bar charts.
+     - Shows data visualizations of diagnoses by severity level and disease severity vs. health index.
+     - Presents medication usage stats and distributions.
+
+  This dashboard helps in monitoring patient health status, visualizing readmission trends, and evaluating model performance for predicting readmissions.
+
+  ![alt text](assets/DB_img_1.png)
+  ![alt text](assets/DB_img_2.png)
+  ![alt text](assets/DB_img_3.png)
+
+
+
+
