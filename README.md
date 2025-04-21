@@ -492,14 +492,21 @@ Divided the dataset into training and testing subsets to evaluate model performa
 #### Data Validation: 
 Implemented validation checks to ensure data integrity and consistency throughout the preprocessing pipeline.
 
+### Hyperparameter Tuning 
 
-### Bias Detection
+ The model development workflow automates the process of training, evaluation, and selecting the best-performing model. The training data is divided and stored in GCS, then retrieved for processing. XGBoost classifiers are employed with efficient hyperparameter tuning and experiment tracking.
 
-Bias evaluation examines demographic disparities in age, gender, and race using data visualization and machine learning models. The approach includes assessing bias metrics like demographic parity ratio and equalized odds ratio before and after applying fairness techniques such as Threshold Optimization, ensuring the model makes equitable predictions across different groups.
+ Hyperopt is utilized for hyperparameter optimization, leveraging the Tree-structured Parzen Estimator (TPE) algorithm. The following XGBoost hyperparameters are fine-tuned:
 
-Related file: bias.py
+ - n_estimator
+ - learning_rate
+ - max_depth
+ - min_child_weight
+ - gamma 
+ - booster
 
-![alt text](assets/image-1.png)
+ Each combination is assessed using 3-fold cross-validation on the training data. The model with the best performance, determined by accuracy and F1 score, is selected, ensuring a balanced trade-off between precision and recall.
+
 
 ### Upload train and test to GCP
 
@@ -517,7 +524,7 @@ Alerts on DAG Start, Complete and if any failure in tasks
 
 ## Model Deployment on a GCP VM:
 
-### Step 1: Authenticate and Set Up Google Cloud
+### Step 1: Create a VM Instance and Set Up Environment
 
 The workflow authenticates with Google Cloud using a service account key stored securely as GCP_SA_KEY in GitHub Secrets. It then installs and configures the Google Cloud CLI (gcloud) to enable interactions with GCP services, including Compute Engine. The workflow also ensures that the Compute Engine API is enabled in the project, which is necessary for creating and managing virtual machine instances.
 
@@ -536,4 +543,226 @@ The workflow defines a VM named airflow-vm in the us-central1-a zone. Before cre
 - Metadata attributes: Sensitive information such as database credentials and SMTP settings are securely passed via instance metadata
 
 This design ensures a reproducible and secure VM setup, with secrets injected at runtime rather than hardcoded.
+
+
+## Bias Model Evaluation:
+
+The bias_Evaluation() function assesses the fairness of the model by analyzing demographic biases related to gender and race. The process includes the following steps:
+
+#### 1. Load Data and Model:
+ - Retrieves the training and test datasets from the data/processed/ directory.
+ - Loads the final model from the final_model/ directory.
+ - Creates a "race" column, classifying data as Caucasian (1) or Other (0), while removing instances with missing values (except for African American records).
+
+#### 2. Fairness Metrics Calculation (Using Fairlearn):
+ - **Disparate Impact Ratio**: Measures the ratio of positive outcomes between different demographic groups.
+
+ - **Demographic Parity Ratio**: Compares the positive prediction rates across sensitive groups.
+
+ - **Equalized Odds Ratio**: Ensures equal false positive and false negative rates across demographic groups.
+
+
+#### 3. Fairness Mitigation Using Fairlearn’s ThresholdOptimizer:
+ To mitigate bias, Fairlearn’s ThresholdOptimizer is used with the "equalized_odds" constraint.
+
+#### 4. Slice-Based Performance Evaluation:
+ We perform data slicing to assess model performance across different demographic groups:
+ - Slicing by Gender (gender_Male)
+ - Slicing by Race (race)
+
+Performance metrics such as accuracy, precision, recall, and F1-score are analyzed for each demographic group.
+
+#### 5. Visualization and Interpretation of Bias Metrics:
+ Generates bar plots to visualize model performance variations across demographic slices.
+ Saves the bias analysis plots (Bias_Gender.png and Bias_Race.png) in the Bias_Plots/ directory.
+
+ - **Disparate Impact**: A ratio of 1 indicates no disparity or equal impact across groups.
+    - Gender (0.82): A slight imbalance, suggesting that one gender (likely females) is underrepresented.
+    - Race (1.65): Significant disparity between racial groups in the model's predictions. Since the dataset is majority Caucasian, this result is expected.
+
+ - **Demographic Parity Ratio (0.35)**: A value of 0.35 suggests the model is more favorable toward one group, which is expected given the majority Caucasian dataset.
+
+ - **Gender Results**: Both genders show similar performance metrics, with a slight difference in F1-score (0.60 for males and 0.62 for females), indicating a moderate disparity in model performance between genders.
+
+ - **Race Results**: Group 1.0 (likely Caucasian): Higher performance across all metrics (Accuracy: 0.70, Precision: 0.69, Recall: 0.70, F1-score: 0.67).
+
+ - **Group 0.0 (likely non-Caucasian)**: Slightly lower performance across all metrics (Accuracy: 0.61, Precision: 0.62, Recall: 0.61, F1-score: 0.60).
+
+Given the majority Caucasian dataset, these results are expected.
+ Pictured below: Bias Race
+ ![alt text](Bias_Plots/bias1.png)
+
+ Pictured below: Bias Gender
+ ![alt text](Bias_Plots/bias2.png)
+
+## FastAPI - Backend API with Prediction Interface:
+
+The backend for the Diabetic Readmission Prediction tool is built using FastAPI, hosted on port 8080, and deployed on a Google Cloud Platform (GCP) VM. This backend powers the real-time inference engine accessed by the healthcare staff via a frontend application.
+
+Core Functionalities:
+- /predict — Accepts patient information and returns model prediction.
+
+- /update-actual-result — Allows manual entry of real patient outcomes to refine post-prediction evaluation.
+
+- /search-patient — Looks up existing patient data, decodes it, and returns a user-friendly response.
+
+### Frontend Integration
+
+The frontend interface is designed to work with this FastAPI backend. Once the Launch Prediction Tool button is clicked, users are redirected to a form where they can:
+
+- Enter real-time patient features
+
+- Get an immediate prediction result
+
+- Update true patient outcomes for ongoing model evaluation
+
+The communication between frontend and backend is secured via CORS configuration, allowing cross-origin requests from: http://localhost:5173
+
+## CI/CD Integration with GitHub Actions
+
+The backend service is fully automated using GitHub Actions for Continuous Integration and Deployment (CI/CD). This ensures that any new changes pushed to the main branch are automatically tested, deployed, and ready for production.
+
+ **Relevant CI/CD Files**:
+   - CI/CD Workflow File: .github/workflows/CI_CD_gcp_fastapi.yml
+   - Setup Script: setup-fastapi.sh
+   - Startup Script: startup-fastapi.sh
+
+### Automated CI/CD Integration
+
+This project leverages GitHub Actions to implement Continuous Integration and Deployment (CI/CD) for the model pipeline. Any changes to the main branch automatically trigger the pipeline, enabling smooth and automated updates and deployments.
+
+    - ● Code yml file : .github/workflows/GCP_deploy.yml
+    - ● Startup and Setup script for CI-CD : startup.sh
+
+### Overview
+This project leverages two GitHub Actions workflows to automate end-to-end deployment and orchestration in a production-like environment:
+
+ 1. Build, Push & Deploy to Cloud Run:
+      This workflow is automatically triggered whenever changes are pushed to specific branches and relevant paths (frontend/backend code or Dockerfiles). It performs the following:
+
+      - Builds Docker images for both frontend and backend services.
+      - Pushes these images to Google Artifact Registry.
+      - Deploys the services to Google Cloud Run, ensuring zero-downtime and scalable deployment.
+
+
+ 2. Deploy Airflow VM on GCP:
+      This is a manually triggered (workflow_dispatch) pipeline designed to:
+      - Spin up a new Compute Engine VM instance if it doesn't already exist.
+      - Deploy Apache Airflow using a startup script (startup.sh), setting up the orchestration environment for running ML workflows.
+      - Expose Airflow via the VM's external IP on port 8080, enabling web access.
+
+These CI/CD workflows ensure that:
+- The latest code and models are automatically tested and deployed with every valid push.
+- The infrastructure for ML orchestration (Airflow) can be set up on-demand, supporting scalability and experimentation.
+- Environment variables and secrets are securely managed via GitHub Secrets, maintaining both security and automation.
+
+#### Step 1: Set Up a Service Account
+
+- Go to the GCP Console and Navigate to the IAM & Admin → Service Accounts
+- Create a New Service Account: Click + Create Service Account.
+- Fill in the Service Account Name and Description. Click Create and Continue.
+
+#### Step 2: Assign Roles to the Service Account
+ - Navigate to the Service Accounts section and locate your newly created service account. Click on the email ID to open its details.
+ - Go to the Permissions tab, click Grant Access, then choose Add Another Role. Assign roles relevant to your CI/CD pipeline requirements, such as access to Cloud Run, Artifact Registry, Compute Engine, or Storage.
+     - Cloud Run Admin (roles/run.admin) — To manage Cloud Run services, including deploying, updating, and deleting services.
+     - Artifact Registry Reader (roles/artifactregistry.reader) — To allow access to view and pull container images from the Artifact Registry.
+     - Compute Admin (roles/compute.admin) — To manage and administer Google Compute Engine resources, including creating, modifying, and deleting VMs, disks, and related compute resources.
+     - Service Account User (roles/iam.serviceAccountUser) — To allow impersonation of this service account, enabling workflows to act on its behalf for API calls or deployments.
+     - Owner (roles/owner) — Grants full access to all resources, including the ability to manage IAM roles and permissions.
+     - Viewer (roles/viewer) — Read-only access to all resources, allowing monitoring and auditability without modification access.
+
+After assigning the roles, click Save to apply the changes.
+![alt text](assets/cicd_step2.png)
+
+#### Step 3: Service Account key
+For our custom-created service account, we have generated a key file, which can now be used for authentication in local development or CI/CD environments.
+
+#### Step 4: Add the Key to GitHub Secrets
+Go to Your GitHub Repository: Navigate to the repository → Settings → Secrets and variables → Actions → New repository secret. Add a New Secret: GCP_SA_KEY -> Copy and paste the contents of the JSON key file 
+
+#### Step 5: Update Your GitHub Actions Workflow
+Add the secret key in the workflow as below, (gcp_vm_setup.yml)
+![alt text](assets/cicd_step5.png)
+
+All steps are automated through GitHub Actions using gcloud CLI commands. A custom service account with the required roles is authenticated using a service account key stored securely in GitHub Secrets.
+
+## CI/CD Implementation
+### CICD - Run
+When the workflows are completed successfully:
+  1. Build, Push & Deploy to Cloud Run:
+     ![alt text](assets/cicd_img1.png)
+
+  2. Deploy Airflow VM on GCP:
+     ![alt text](assets/cicd_img2.png)
+
+Total Run time Durations of both:
+  1. Build, Push & Deploy to Cloud Run: 3m 17s
+     ![alt text](assets/cicd_img1.png)
+
+  2. Deploy Airflow VM on GCP: 41s
+     ![alt text](assets/cicd_img2.png)
+
+### CICD - Validation
+
+#### Logging and Monitoring
+In our system, we utilize Google BigQuery to log and monitor the performance of our machine learning models and infrastructure. This enables us to ensure optimal performance and scalability by tracking key metrics such as model response timings and VM instance CPU utilization.
+
+#### Big Query:
+ - **Step 1: Create Dataset**
+    - Navigate to Google Console then search Big Query 
+    - Open Big Query Studio, then right click project create Dataset 
+    - Enter the below details
+       - NAME: Model_Metrics
+       - DATA LOCATION: US 
+    - Click create Dataset
+
+ - **Step 2: Create a Table**
+    - Navigate to the newly created Dataset, click the three dots and click New Table
+    - Enter the details as below,
+       - Name: Model_Metrics_table
+    - Data Location: US
+    - Click create table
+    - Navigate to schema section and click edit schema and paste the below content
+    ```sh
+      [
+      {"name": "timestamp", "type": "timestamp", "mode": "NULLABLE"},
+      {"name": "endpoint", "type": "STRING", "mode": "NULLABLE"},
+      {"name": "input_data", "type": "STRING", "mode": "NULLABLE"},
+      {"name": "prediction", "type": "STRING", "mode": "NULLABLE"},
+      {"name": "response_time", "type": "FLOAT", "mode": "NULLABLE"},
+      {"name": "status", "type": "STRING", "mode": "NULLABLE"}
+      ] ```
+
+
+
+## Dashboard:
+
+ Streamlit dashboard to visualize and analyze patient readmission data. It performs the following tasks:
+
+ - **1. Data Loading & Preprocessing**:
+     - Loads scaled patient data from a PostgreSQL database.
+     - Reverses scaling for original values using a scaler stored in Google Cloud Storage (GCS).
+
+ - **2. Streamlit UI**:
+     - Displays patient visit history, health index vs. readmission status, and readmission analysis with bar charts.
+     - Shows data visualizations of diagnoses by severity level and disease severity vs. health index.
+     - Presents medication usage stats and distributions.
+
+  This dashboard helps in monitoring patient health status, visualizing readmission trends, and evaluating model performance for predicting readmissions.
+
+  ![alt text](assets/DB_img_1.png)
+  ![alt text](assets/DB_img_2.png)
+  ![alt text](assets/Dashboard_Screenshot_1.png)
+  ![alt text](assets/Dashboard_Screenshot.png)
+
+### Dashboard (Monitoring Response time)
+![alt text](assets/DB_img_4.png)
+
+### VM instance CPU Utilization
+![alt text](assets/cpu.png)
+
+
+
+
 
